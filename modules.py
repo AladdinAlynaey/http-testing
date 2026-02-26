@@ -5,7 +5,7 @@ import os
 import uuid
 import requests
 import bleach
-from flask import Blueprint, request, jsonify, send_from_directory
+from flask import Blueprint, request, jsonify, send_from_directory, g
 from werkzeug.utils import secure_filename
 from database import get_db
 from auth import require_auth, require_api_key, require_role, get_current_user, log_audit
@@ -309,7 +309,6 @@ def get_student(student_id):
     return jsonify({'data': dict(row)})
 
 @modules_bp.route('/api/students', methods=['POST'])
-@require_api_key('intermediate')
 def create_student():
     data = request.get_json(silent=True) or {}
     name = sanitize(data.get('name'))
@@ -324,11 +323,10 @@ def create_student():
     db.commit()
     row = db.execute("SELECT * FROM students WHERE id=?", (c.lastrowid,)).fetchone()
     db.close()
-    log_audit(g.current_user.get('user_id'), 'create_student', f'student:{c.lastrowid}')
+    log_audit(None, 'create_student', f'student:{c.lastrowid}')
     return jsonify({'data': dict(row), 'message': 'Student created'}), 201
 
 @modules_bp.route('/api/students/<int:student_id>', methods=['PUT'])
-@require_api_key('intermediate')
 def update_student(student_id):
     data = request.get_json(silent=True) or {}
     db = get_db()
@@ -352,7 +350,6 @@ def update_student(student_id):
     return jsonify({'data': dict(row), 'message': 'Student updated'})
 
 @modules_bp.route('/api/students/<int:student_id>', methods=['DELETE'])
-@require_api_key('intermediate')
 def delete_student(student_id):
     db = get_db()
     existing = db.execute("SELECT * FROM students WHERE id=?", (student_id,)).fetchone()
@@ -453,7 +450,6 @@ def list_files():
     return jsonify({'data': [dict(r) for r in rows], 'count': len(rows)})
 
 @modules_bp.route('/api/files/upload', methods=['POST'])
-@require_api_key('intermediate')
 def upload_file():
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
@@ -478,12 +474,12 @@ def upload_file():
     db = get_db()
     c = db.execute(
         "INSERT INTO files (filename,original_name,file_type,file_size,uploaded_by) VALUES (?,?,?,?,?)",
-        (unique_name, original_name, ext, size, g.current_user.get('username', 'anonymous'))
+        (unique_name, original_name, ext, size, 'anonymous')
     )
     db.commit()
     row = db.execute("SELECT * FROM files WHERE id=?", (c.lastrowid,)).fetchone()
     db.close()
-    log_audit(g.current_user.get('user_id'), 'upload_file', f'file:{unique_name}')
+    log_audit(None, 'upload_file', f'file:{unique_name}')
     return jsonify({'data': dict(row), 'message': 'File uploaded successfully'}), 201
 
 @modules_bp.route('/api/files/download/<int:file_id>', methods=['GET'])
@@ -500,7 +496,6 @@ def download_file(file_id):
                                download_name=row['original_name'], as_attachment=True)
 
 @modules_bp.route('/api/files/<int:file_id>', methods=['DELETE'])
-@require_api_key('intermediate')
 def delete_file(file_id):
     db = get_db()
     row = db.execute("SELECT * FROM files WHERE id=?", (file_id,)).fetchone()
@@ -543,7 +538,6 @@ def get_blog_post(post_id):
     return jsonify({'data': dict(row)})
 
 @modules_bp.route('/api/blog', methods=['POST'])
-@require_api_key('intermediate')
 def create_blog_post():
     data = request.get_json(silent=True) or {}
     title = sanitize(data.get('title'))
@@ -553,7 +547,7 @@ def create_blog_post():
     db = get_db()
     c = db.execute(
         "INSERT INTO blog_posts (title,content,author,tags,is_published) VALUES (?,?,?,?,?)",
-        (title, content, g.current_user.get('username', 'anonymous'),
+        (title, content, 'anonymous',
          sanitize(data.get('tags')), data.get('is_published', 1))
     )
     db.commit()
@@ -562,7 +556,6 @@ def create_blog_post():
     return jsonify({'data': dict(row), 'message': 'Blog post created'}), 201
 
 @modules_bp.route('/api/blog/<int:post_id>', methods=['PUT'])
-@require_api_key('intermediate')
 def update_blog_post(post_id):
     data = request.get_json(silent=True) or {}
     db = get_db()
@@ -584,7 +577,6 @@ def update_blog_post(post_id):
     return jsonify({'data': dict(row), 'message': 'Post updated'})
 
 @modules_bp.route('/api/blog/<int:post_id>', methods=['DELETE'])
-@require_api_key('intermediate')
 def delete_blog_post(post_id):
     db = get_db()
     existing = db.execute("SELECT * FROM blog_posts WHERE id=?", (post_id,)).fetchone()
@@ -631,7 +623,6 @@ def get_inventory_item(item_id):
     return jsonify({'data': dict(row)})
 
 @modules_bp.route('/api/inventory', methods=['POST'])
-@require_api_key('intermediate')
 def create_inventory_item():
     data = request.get_json(silent=True) or {}
     name = sanitize(data.get('name'))
@@ -650,7 +641,6 @@ def create_inventory_item():
     return jsonify({'data': dict(row), 'message': 'Item created'}), 201
 
 @modules_bp.route('/api/inventory/<int:item_id>', methods=['PUT'])
-@require_api_key('intermediate')
 def update_inventory_item(item_id):
     data = request.get_json(silent=True) or {}
     db = get_db()
@@ -674,7 +664,6 @@ def update_inventory_item(item_id):
     return jsonify({'data': dict(row), 'message': 'Item updated'})
 
 @modules_bp.route('/api/inventory/<int:item_id>', methods=['DELETE'])
-@require_api_key('intermediate')
 def delete_inventory_item(item_id):
     db = get_db()
     existing = db.execute("SELECT * FROM inventory WHERE id=?", (item_id,)).fetchone()
@@ -739,7 +728,6 @@ def compare_weather():
 # 10. AI ASSISTANT (Advanced - Login Required)
 # ============================================================
 @modules_bp.route('/api/ai/generate', methods=['POST'])
-@require_auth
 def ai_generate():
     """Generate text using OpenRouter AI"""
     data = request.get_json(silent=True) or {}
@@ -772,7 +760,7 @@ def ai_generate():
         )
         result = response.json()
         content = result.get('choices', [{}])[0].get('message', {}).get('content', 'No response')
-        log_audit(g.current_user.get('user_id'), 'ai_generate', 'ai', prompt[:100])
+        log_audit(None, 'ai_generate', 'ai', prompt[:100])
         return jsonify({'data': {'response': content, 'model': OPENROUTER_MODEL}})
     except requests.Timeout:
         return jsonify({'error': 'AI service timeout'}), 504
@@ -780,7 +768,6 @@ def ai_generate():
         return jsonify({'error': 'AI service error', 'details': str(e)}), 500
 
 @modules_bp.route('/api/ai/summarize', methods=['POST'])
-@require_auth
 def ai_summarize():
     """Summarize text using AI"""
     data = request.get_json(silent=True) or {}
@@ -813,13 +800,12 @@ def ai_summarize():
         )
         result = response.json()
         content = result.get('choices', [{}])[0].get('message', {}).get('content', 'No summary')
-        log_audit(g.current_user.get('user_id'), 'ai_summarize', 'ai')
+        log_audit(None, 'ai_summarize', 'ai')
         return jsonify({'data': {'summary': content, 'original_length': len(text)}})
     except Exception as e:
         return jsonify({'error': 'AI service error', 'details': str(e)}), 500
 
 @modules_bp.route('/api/ai/classify', methods=['POST'])
-@require_auth
 def ai_classify():
     """Classify text into categories"""
     data = request.get_json(silent=True) or {}
@@ -853,13 +839,12 @@ def ai_classify():
         )
         result = response.json()
         category = result.get('choices', [{}])[0].get('message', {}).get('content', 'Unknown').strip()
-        log_audit(g.current_user.get('user_id'), 'ai_classify', 'ai')
+        log_audit(None, 'ai_classify', 'ai')
         return jsonify({'data': {'category': category, 'available_categories': categories}})
     except Exception as e:
         return jsonify({'error': 'AI service error', 'details': str(e)}), 500
 
 @modules_bp.route('/api/ai/validate', methods=['POST'])
-@require_auth
 def ai_validate():
     """Validate/check content using AI"""
     data = request.get_json(silent=True) or {}
@@ -899,13 +884,12 @@ def ai_validate():
         )
         result = response.json()
         feedback = result.get('choices', [{}])[0].get('message', {}).get('content', 'No feedback')
-        log_audit(g.current_user.get('user_id'), 'ai_validate', 'ai', check_type)
+        log_audit(None, 'ai_validate', 'ai', check_type)
         return jsonify({'data': {'feedback': feedback, 'check_type': check_type}})
     except Exception as e:
         return jsonify({'error': 'AI service error', 'details': str(e)}), 500
 
 @modules_bp.route('/api/ai/chat', methods=['POST'])
-@require_auth
 def ai_chat():
     """Interactive AI chat for learning"""
     data = request.get_json(silent=True) or {}
@@ -946,7 +930,7 @@ def ai_chat():
         )
         result = response.json()
         reply = result.get('choices', [{}])[0].get('message', {}).get('content', 'No response')
-        log_audit(g.current_user.get('user_id'), 'ai_chat', 'ai', context)
+        log_audit(None, 'ai_chat', 'ai', context)
         return jsonify({'data': {'reply': reply, 'context': context}})
     except Exception as e:
         return jsonify({'error': 'AI service error', 'details': str(e)}), 500
@@ -968,18 +952,18 @@ def api_info():
     return jsonify({
         'name': 'HTTP Playground API',
         'version': '1.0.0',
-        'description': 'Educational HTTP playground and API training platform',
+        'description': 'Educational HTTP playground and API training platform — ALL endpoints are public, no keys needed!',
         'modules': [
             {'name': 'Library', 'path': '/api/books', 'level': 'beginner', 'auth': 'none'},
             {'name': 'Restaurant Menu', 'path': '/api/menu', 'level': 'beginner', 'auth': 'none'},
             {'name': 'Task Manager', 'path': '/api/tasks', 'level': 'beginner', 'auth': 'none'},
-            {'name': 'Student Management', 'path': '/api/students', 'level': 'intermediate', 'auth': 'api_key'},
+            {'name': 'Student Management', 'path': '/api/students', 'level': 'beginner', 'auth': 'none'},
             {'name': 'Notes', 'path': '/api/notes', 'level': 'beginner', 'auth': 'none'},
-            {'name': 'File Manager', 'path': '/api/files', 'level': 'intermediate', 'auth': 'api_key'},
-            {'name': 'Blog', 'path': '/api/blog', 'level': 'beginner/intermediate', 'auth': 'none/api_key'},
-            {'name': 'Inventory', 'path': '/api/inventory', 'level': 'intermediate', 'auth': 'api_key'},
+            {'name': 'File Manager', 'path': '/api/files', 'level': 'beginner', 'auth': 'none'},
+            {'name': 'Blog', 'path': '/api/blog', 'level': 'beginner', 'auth': 'none'},
+            {'name': 'Inventory', 'path': '/api/inventory', 'level': 'beginner', 'auth': 'none'},
             {'name': 'Weather', 'path': '/api/weather', 'level': 'beginner', 'auth': 'none'},
-            {'name': 'AI Assistant', 'path': '/api/ai/*', 'level': 'advanced', 'auth': 'login'},
+            {'name': 'AI Assistant', 'path': '/api/ai/*', 'level': 'beginner', 'auth': 'none'},
         ],
         'documentation': '/docs'
     })

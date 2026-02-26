@@ -7,6 +7,7 @@
     <title>Register - HTTP Playground</title>
     <meta name="description"
         content="Create your HTTP Playground account to get an API key and access intermediate and advanced endpoints.">
+    <link rel="icon" type="image/png" href="/static/images/http.png">
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
@@ -18,12 +19,14 @@
     <header class="header">
         <div class="header-inner">
             <a href="/" class="logo">
-                <div class="logo-icon"><i class="fas fa-code"></i></div>
+                <img src="/static/images/http.png" alt="HTTP" style="width:36px;height:36px;border-radius:8px">
                 HTTP Playground
             </a>
             <nav class="nav">
-                <a href="/"><i class="fas fa-home"></i> <span>Home</span></a>
-                <a href="/docs"><i class="fas fa-book"></i> <span>Docs</span></a>
+                <a href="/"><i class="fas fa-home"></i> <span data-i18n="nav.home">Home</span></a>
+                <a href="/docs"><i class="fas fa-book"></i> <span data-i18n="nav.docs">Docs</span></a>
+                <button class="lang-toggle" id="lang-toggle" onclick="toggleLanguage()"
+                    title="Toggle Language">عربي</button>
                 <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
             </nav>
         </div>
@@ -31,45 +34,52 @@
 
     <div class="auth-container">
         <div class="auth-card">
-            <h2>Create Account</h2>
-            <p class="subtitle">Register to get your API key & access advanced features</p>
+            <h2 data-i18n="register.title">Create Account</h2>
+            <p class="subtitle" data-i18n="register.subtitle">Register to get your API key & access advanced features
+            </p>
 
             <div id="reg-error" class="alert alert-error"></div>
             <div id="reg-success" class="alert alert-success"></div>
 
             <form id="register-form" onsubmit="handleRegister(event)">
                 <div class="form-group">
-                    <label class="form-label">Username</label>
-                    <input type="text" class="form-input" id="reg-username" placeholder="Choose a username (3-30 chars)"
-                        required minlength="3" maxlength="30">
+                    <label class="form-label" data-i18n="register.username">Username</label>
+                    <input type="text" class="form-input" id="reg-username"
+                        data-i18n-placeholder="register.username.placeholder"
+                        placeholder="Choose a username (3-30 chars)" required minlength="3" maxlength="30">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-input" id="reg-email" placeholder="your@email.com" required>
+                    <label class="form-label" data-i18n="register.email">Email</label>
+                    <input type="email" class="form-input" id="reg-email"
+                        data-i18n-placeholder="register.email.placeholder" placeholder="your@email.com" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" class="form-input" id="reg-password" placeholder="Minimum 8 characters"
+                    <label class="form-label" data-i18n="register.password">Password</label>
+                    <input type="password" class="form-input" id="reg-password"
+                        data-i18n-placeholder="register.password.placeholder" placeholder="Minimum 8 characters"
                         required minlength="8">
                 </div>
                 <button type="submit" class="btn btn-primary" id="reg-btn">
-                    <i class="fas fa-user-plus"></i> Register
+                    <i class="fas fa-user-plus"></i> <span data-i18n="register.btn">Register</span>
                 </button>
             </form>
 
             <div class="auth-footer">
-                Already have an account? <a href="/login">Login here</a>
+                <span data-i18n="register.has_account">Already have an account?</span> <a href="/login"
+                    data-i18n="register.login_link">Login here</a>
             </div>
         </div>
     </div>
 
     <footer class="footer">
         <p class="footer-text">
-            Built by <strong>Alaadin</strong> &nbsp;•&nbsp;
-            Powered by AI via <a href="https://openrouter.ai" target="_blank">OpenRouter</a>
+            <span data-i18n="footer.built">Built by</span> <strong>Alaadin</strong> &nbsp;•&nbsp;
+            <span data-i18n="footer.powered">Powered by AI via</span> <a href="https://openrouter.ai"
+                target="_blank">OpenRouter</a>
         </p>
     </footer>
 
+    <script src="/static/js/i18n.js"></script>
     <script src="/static/js/app.js"></script>
     <script>
         async function handleRegister(e) {
@@ -80,7 +90,7 @@
             errEl.style.display = 'none';
             sucEl.style.display = 'none';
             btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div> Registering...';
+            btn.innerHTML = '<div class="spinner"></div> ' + t('register.btn') + '...';
 
             try {
                 const res = await fetch('/api/auth/register', {
@@ -96,18 +106,18 @@
                 if (!res.ok) throw data;
 
                 sucEl.innerHTML = `
-                    <strong>Registration successful!</strong><br>
-                    Your account is pending admin approval. Once approved, you'll receive an API key.
-                    <br><br><a href="/login" style="color:var(--success)">Go to Login →</a>
+                    <strong>${t('register.success')}</strong><br>
+                    ${t('register.pending')}
+                    <br><br><a href="/login" style="color:var(--success)">${t('register.go_login')}</a>
                 `;
                 sucEl.style.display = 'block';
                 document.getElementById('register-form').reset();
             } catch (err) {
-                errEl.textContent = err.error || 'Registration failed. Please try again.';
+                errEl.textContent = err.error || t('register.failed');
                 errEl.style.display = 'block';
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-user-plus"></i> Register';
+                btn.innerHTML = '<i class="fas fa-user-plus"></i> ' + t('register.btn');
             }
         }
     </script>

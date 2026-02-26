@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - HTTP Playground</title>
+    <link rel="icon" type="image/png" href="/static/images/http.png">
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
@@ -16,21 +17,22 @@
     <header class="header">
         <div class="header-inner">
             <a href="/" class="logo">
-                <div class="logo-icon"><i class="fas fa-code"></i></div>
+                <img src="/static/images/http.png" alt="HTTP" style="width:36px;height:36px;border-radius:8px">
                 HTTP Playground
             </a>
             <nav class="nav">
-                <a href="/"><i class="fas fa-home"></i> <span>Home</span></a>
-                <a href="/docs"><i class="fas fa-book"></i> <span>Docs</span></a>
+                <a href="/"><i class="fas fa-home"></i> <span data-i18n="nav.home">Home</span></a>
+                <a href="/docs"><i class="fas fa-book"></i> <span data-i18n="nav.docs">Docs</span></a>
                 <div id="auth-nav"></div>
+                <button class="lang-toggle" id="lang-toggle" onclick="toggleLanguage()" title="Toggle Language">عربي</button>
                 <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
             </nav>
         </div>
     </header>
 
     <main class="main">
-        <h1 style="margin-bottom:8px"><i class="fas fa-shield-alt" style="color:var(--accent)"></i> Admin Dashboard</h1>
-        <p style="color:var(--text-secondary);margin-bottom:32px">Manage users, API keys, and monitor platform activity
+        <h1 style="margin-bottom:8px"><i class="fas fa-shield-alt" style="color:var(--accent)"></i> <span data-i18n="admin.title">Admin Dashboard</span></h1>
+        <p style="color:var(--text-secondary);margin-bottom:32px" data-i18n="admin.subtitle">Manage users, API keys, and monitor platform activity
         </p>
 
         <div id="admin-loading" class="flex-center" style="padding:60px">
@@ -43,33 +45,32 @@
 
             <!-- Tabs -->
             <div class="tabs">
-                <button class="tab active" onclick="switchTab('users')"><i class="fas fa-users"></i> Users</button>
-                <button class="tab" onclick="switchTab('keys')"><i class="fas fa-key"></i> API Keys</button>
-                <button class="tab" onclick="switchTab('audit')"><i class="fas fa-clipboard-list"></i> Audit
-                    Log</button>
+                <button class="tab active" onclick="switchTab('users')"><i class="fas fa-users"></i> <span data-i18n="admin.tab.users">Users</span></button>
+                <button class="tab" onclick="switchTab('keys')"><i class="fas fa-key"></i> <span data-i18n="admin.tab.keys">API Keys</span></button>
+                <button class="tab" onclick="switchTab('audit')"><i class="fas fa-clipboard-list"></i> <span data-i18n="admin.tab.audit">Audit Log</span></button>
             </div>
 
             <!-- Users Tab -->
             <div id="tab-users" class="tab-content active">
                 <div style="margin-bottom:16px;display:flex;gap:8px;align-items:center">
                     <select id="user-filter" class="filter-select" onchange="loadUsers()">
-                        <option value="">All Users</option>
-                        <option value="pending">Pending</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
+                        <option value="" data-i18n="admin.filter.all">All Users</option>
+                        <option value="pending" data-i18n="admin.filter.pending">Pending</option>
+                        <option value="approved" data-i18n="admin.filter.approved">Approved</option>
+                        <option value="rejected" data-i18n="admin.filter.rejected">Rejected</option>
                     </select>
                 </div>
                 <div style="overflow-x:auto">
                     <table class="data-table" id="users-table">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Status</th>
-                                <th>Created</th>
-                                <th>Actions</th>
+                                <th data-i18n="admin.table.id">ID</th>
+                                <th data-i18n="admin.table.username">Username</th>
+                                <th data-i18n="admin.table.email">Email</th>
+                                <th data-i18n="admin.table.role">Role</th>
+                                <th data-i18n="admin.table.status">Status</th>
+                                <th data-i18n="admin.table.created">Created</th>
+                                <th data-i18n="admin.table.actions">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="users-tbody"></tbody>
@@ -83,14 +84,14 @@
                     <table class="data-table" id="keys-table">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>User</th>
-                                <th>Key</th>
-                                <th>Scope</th>
-                                <th>Active</th>
-                                <th>Created</th>
-                                <th>Last Used</th>
-                                <th>Actions</th>
+                                <th data-i18n="admin.table.id">ID</th>
+                                <th data-i18n="admin.table.user">User</th>
+                                <th data-i18n="admin.table.key">Key</th>
+                                <th data-i18n="admin.table.scope">Scope</th>
+                                <th data-i18n="admin.table.active">Active</th>
+                                <th data-i18n="admin.table.created">Created</th>
+                                <th data-i18n="admin.table.lastused">Last Used</th>
+                                <th data-i18n="admin.table.actions">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="keys-tbody"></tbody>
@@ -104,12 +105,12 @@
                     <table class="data-table" id="audit-table">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>User ID</th>
-                                <th>Action</th>
-                                <th>Resource</th>
-                                <th>IP</th>
-                                <th>Time</th>
+                                <th data-i18n="admin.table.id">ID</th>
+                                <th data-i18n="admin.table.userid">User ID</th>
+                                <th data-i18n="admin.table.action">Action</th>
+                                <th data-i18n="admin.table.resource">Resource</th>
+                                <th data-i18n="admin.table.ip">IP</th>
+                                <th data-i18n="admin.table.time">Time</th>
                             </tr>
                         </thead>
                         <tbody id="audit-tbody"></tbody>
@@ -121,11 +122,12 @@
 
     <footer class="footer">
         <p class="footer-text">
-            Built by <strong>Alaadin</strong> &nbsp;•&nbsp;
-            Powered by AI via <a href="https://openrouter.ai" target="_blank">OpenRouter</a>
+            <span data-i18n="footer.built">Built by</span> <strong>Alaadin</strong> &nbsp;•&nbsp;
+            <span data-i18n="footer.powered">Powered by AI via</span> <a href="https://openrouter.ai" target="_blank">OpenRouter</a>
         </p>
     </footer>
 
+    <script src="/static/js/i18n.js"></script>
     <script src="/static/js/app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
@@ -141,7 +143,7 @@
                 document.getElementById('admin-loading').style.display = 'none';
                 document.getElementById('admin-content').style.display = 'block';
             } catch (e) {
-                document.getElementById('admin-loading').innerHTML = '<p style="color:var(--danger)">Access denied or session expired. <a href="/login">Login again</a></p>';
+                document.getElementById('admin-loading').innerHTML = `<p style="color:var(--danger)">${t('admin.denied')} <a href="/login">${t('admin.login_again')}</a></p>`;
             }
         });
 
@@ -158,10 +160,10 @@
             const data = await apiRequest('/api/admin/stats');
             const s = data.data;
             document.getElementById('stats-grid').innerHTML = `
-                <div class="stat-card"><div class="stat-value">${s.total_users}</div><div class="stat-label">Total Users</div></div>
-                <div class="stat-card"><div class="stat-value">${s.pending_users}</div><div class="stat-label">Pending Approval</div></div>
-                <div class="stat-card"><div class="stat-value">${s.active_keys}</div><div class="stat-label">Active API Keys</div></div>
-                <div class="stat-card"><div class="stat-value">${s.recent_logs}</div><div class="stat-label">Logs (24h)</div></div>
+                <div class="stat-card"><div class="stat-value">${s.total_users}</div><div class="stat-label">${t('admin.stat.total')}</div></div>
+                <div class="stat-card"><div class="stat-value">${s.pending_users}</div><div class="stat-label">${t('admin.stat.pending')}</div></div>
+                <div class="stat-card"><div class="stat-value">${s.active_keys}</div><div class="stat-label">${t('admin.stat.keys')}</div></div>
+                <div class="stat-card"><div class="stat-value">${s.recent_logs}</div><div class="stat-label">${t('admin.stat.logs')}</div></div>
             `;
         }
 
@@ -185,7 +187,7 @@
                         ` : ''}
                     </td>
                 </tr>
-            `).join('') || '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">No users found</td></tr>';
+            `).join('') || `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">${t('admin.no_users')}</td></tr>`;
         }
 
         async function approveUser(id) {
@@ -217,16 +219,16 @@
                     <td>${new Date(k.created_at).toLocaleDateString()}</td>
                     <td>${k.last_used ? new Date(k.last_used).toLocaleDateString() : 'Never'}</td>
                     <td>
-                        ${k.is_active ? `<button class="btn btn-danger btn-sm" onclick="revokeKey(${k.id})">Revoke</button>` : ''}
+                        ${k.is_active ? `<button class="btn btn-danger btn-sm" onclick="revokeKey(${k.id})">${t('admin.revoke')}</button>` : ''}
                     </td>
                 </tr>
-            `).join('') || '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">No API keys</td></tr>';
+            `).join('') || `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">${t('admin.no_keys')}</td></tr>`;
         }
 
         async function revokeKey(id) {
             try {
                 await apiRequest(`/api/admin/keys/${id}/revoke`, { method: 'POST' });
-                showToast('API key revoked', 'success');
+                showToast(t('admin.revoked'), 'success');
                 loadKeys();
             } catch (e) { showToast(e.error || 'Failed', 'error'); }
         }
@@ -243,7 +245,7 @@
                     <td style="font-family:var(--font-mono);font-size:0.8rem">${l.ip_address || '-'}</td>
                     <td>${new Date(l.created_at).toLocaleString()}</td>
                 </tr>
-            `).join('') || '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">No logs</td></tr>';
+            `).join('') || `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">${t('admin.no_logs')}</td></tr>`;
         }
     </script>
 </body>
