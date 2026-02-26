@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - HTTP Playground</title>
+    <meta name="description"
+        content="Create your HTTP Playground account to get an API key and access intermediate and advanced endpoints.">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <header class="header">
+        <div class="header-inner">
+            <a href="/" class="logo">
+                <div class="logo-icon"><i class="fas fa-code"></i></div>
+                HTTP Playground
+            </a>
+            <nav class="nav">
+                <a href="/"><i class="fas fa-home"></i> <span>Home</span></a>
+                <a href="/docs"><i class="fas fa-book"></i> <span>Docs</span></a>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+            </nav>
+        </div>
+    </header>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <h2>Create Account</h2>
+            <p class="subtitle">Register to get your API key & access advanced features</p>
+
+            <div id="reg-error" class="alert alert-error"></div>
+            <div id="reg-success" class="alert alert-success"></div>
+
+            <form id="register-form" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-input" id="reg-username" placeholder="Choose a username (3-30 chars)"
+                        required minlength="3" maxlength="30">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="reg-email" placeholder="your@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="reg-password" placeholder="Minimum 8 characters"
+                        required minlength="8">
+                </div>
+                <button type="submit" class="btn btn-primary" id="reg-btn">
+                    <i class="fas fa-user-plus"></i> Register
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                Already have an account? <a href="/login">Login here</a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p class="footer-text">
+            Built by <strong>Alaadin</strong> &nbsp;•&nbsp;
+            Powered by AI via <a href="https://openrouter.ai" target="_blank">OpenRouter</a>
+        </p>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        async function handleRegister(e) {
+            e.preventDefault();
+            const errEl = document.getElementById('reg-error');
+            const sucEl = document.getElementById('reg-success');
+            const btn = document.getElementById('reg-btn');
+            errEl.style.display = 'none';
+            sucEl.style.display = 'none';
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Registering...';
+
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: document.getElementById('reg-username').value,
+                        email: document.getElementById('reg-email').value,
+                        password: document.getElementById('reg-password').value
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw data;
+
+                sucEl.innerHTML = `
+                    <strong>Registration successful!</strong><br>
+                    Your account is pending admin approval. Once approved, you'll receive an API key.
+                    <br><br><a href="/login" style="color:var(--success)">Go to Login →</a>
+                `;
+                sucEl.style.display = 'block';
+                document.getElementById('register-form').reset();
+            } catch (err) {
+                errEl.textContent = err.error || 'Registration failed. Please try again.';
+                errEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-user-plus"></i> Register';
+            }
+        }
+    </script>
+</body>
+
+</html>

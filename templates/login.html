@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - HTTP Playground</title>
+    <meta name="description"
+        content="Login to your HTTP Playground account to access advanced API endpoints and AI features.">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <header class="header">
+        <div class="header-inner">
+            <a href="/" class="logo">
+                <div class="logo-icon"><i class="fas fa-code"></i></div>
+                HTTP Playground
+            </a>
+            <nav class="nav">
+                <a href="/"><i class="fas fa-home"></i> <span>Home</span></a>
+                <a href="/docs"><i class="fas fa-book"></i> <span>Docs</span></a>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+            </nav>
+        </div>
+    </header>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <h2>Welcome Back</h2>
+            <p class="subtitle">Login to access advanced endpoints & AI features</p>
+
+            <div id="login-error" class="alert alert-error"></div>
+            <div id="login-success" class="alert alert-success"></div>
+
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-input" id="username" placeholder="Enter your username" required
+                        autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="password" placeholder="Enter your password" required
+                        autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary" id="login-btn">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                Don't have an account? <a href="/register">Register here</a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p class="footer-text">
+            Built by <strong>Alaadin</strong> &nbsp;•&nbsp;
+            Powered by AI via <a href="https://openrouter.ai" target="_blank">OpenRouter</a>
+        </p>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        async function handleLogin(e) {
+            e.preventDefault();
+            const errEl = document.getElementById('login-error');
+            const sucEl = document.getElementById('login-success');
+            const btn = document.getElementById('login-btn');
+            errEl.style.display = 'none';
+            sucEl.style.display = 'none';
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Logging in...';
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: document.getElementById('username').value,
+                        password: document.getElementById('password').value
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw data;
+
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('refresh_token', data.refresh_token);
+                localStorage.setItem('user_data', JSON.stringify(data.user));
+                if (data.api_key) localStorage.setItem('api_key', data.api_key);
+
+                sucEl.textContent = 'Login successful! Redirecting...';
+                sucEl.style.display = 'block';
+
+                setTimeout(() => {
+                    if (['admin', 'superadmin'].includes(data.user.role)) {
+                        window.location.href = '/admin';
+                    } else {
+                        window.location.href = '/';
+                    }
+                }, 1000);
+            } catch (err) {
+                errEl.textContent = err.error || 'Login failed. Please try again.';
+                errEl.style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+            }
+        }
+    </script>
+</body>
+
+</html>

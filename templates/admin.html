@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - HTTP Playground</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <header class="header">
+        <div class="header-inner">
+            <a href="/" class="logo">
+                <div class="logo-icon"><i class="fas fa-code"></i></div>
+                HTTP Playground
+            </a>
+            <nav class="nav">
+                <a href="/"><i class="fas fa-home"></i> <span>Home</span></a>
+                <a href="/docs"><i class="fas fa-book"></i> <span>Docs</span></a>
+                <div id="auth-nav"></div>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <h1 style="margin-bottom:8px"><i class="fas fa-shield-alt" style="color:var(--accent)"></i> Admin Dashboard</h1>
+        <p style="color:var(--text-secondary);margin-bottom:32px">Manage users, API keys, and monitor platform activity
+        </p>
+
+        <div id="admin-loading" class="flex-center" style="padding:60px">
+            <div class="spinner"></div>
+        </div>
+        <div id="admin-content" style="display:none">
+
+            <!-- Stats -->
+            <div class="admin-grid" id="stats-grid"></div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('users')"><i class="fas fa-users"></i> Users</button>
+                <button class="tab" onclick="switchTab('keys')"><i class="fas fa-key"></i> API Keys</button>
+                <button class="tab" onclick="switchTab('audit')"><i class="fas fa-clipboard-list"></i> Audit
+                    Log</button>
+            </div>
+
+            <!-- Users Tab -->
+            <div id="tab-users" class="tab-content active">
+                <div style="margin-bottom:16px;display:flex;gap:8px;align-items:center">
+                    <select id="user-filter" class="filter-select" onchange="loadUsers()">
+                        <option value="">All Users</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
+                <div style="overflow-x:auto">
+                    <table class="data-table" id="users-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Keys Tab -->
+            <div id="tab-keys" class="tab-content">
+                <div style="overflow-x:auto">
+                    <table class="data-table" id="keys-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Key</th>
+                                <th>Scope</th>
+                                <th>Active</th>
+                                <th>Created</th>
+                                <th>Last Used</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="keys-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Audit Tab -->
+            <div id="tab-audit" class="tab-content">
+                <div style="overflow-x:auto">
+                    <table class="data-table" id="audit-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User ID</th>
+                                <th>Action</th>
+                                <th>Resource</th>
+                                <th>IP</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="audit-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p class="footer-text">
+            Built by <strong>Alaadin</strong> &nbsp;•&nbsp;
+            Powered by AI via <a href="https://openrouter.ai" target="_blank">OpenRouter</a>
+        </p>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('access_token');
+            const userData = localStorage.getItem('user_data');
+            if (!token || !userData) { window.location.href = '/login'; return; }
+            const user = JSON.parse(userData);
+            if (!['admin', 'superadmin'].includes(user.role)) { window.location.href = '/'; return; }
+
+            try {
+                await loadStats();
+                await loadUsers();
+                document.getElementById('admin-loading').style.display = 'none';
+                document.getElementById('admin-content').style.display = 'block';
+            } catch (e) {
+                document.getElementById('admin-loading').innerHTML = '<p style="color:var(--danger)">Access denied or session expired. <a href="/login">Login again</a></p>';
+            }
+        });
+
+        function switchTab(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            event.target.closest('.tab').classList.add('active');
+            document.getElementById('tab-' + name).classList.add('active');
+            if (name === 'keys') loadKeys();
+            if (name === 'audit') loadAudit();
+        }
+
+        async function loadStats() {
+            const data = await apiRequest('/api/admin/stats');
+            const s = data.data;
+            document.getElementById('stats-grid').innerHTML = `
+                <div class="stat-card"><div class="stat-value">${s.total_users}</div><div class="stat-label">Total Users</div></div>
+                <div class="stat-card"><div class="stat-value">${s.pending_users}</div><div class="stat-label">Pending Approval</div></div>
+                <div class="stat-card"><div class="stat-value">${s.active_keys}</div><div class="stat-label">Active API Keys</div></div>
+                <div class="stat-card"><div class="stat-value">${s.recent_logs}</div><div class="stat-label">Logs (24h)</div></div>
+            `;
+        }
+
+        async function loadUsers() {
+            const filter = document.getElementById('user-filter').value;
+            const url = filter ? `/api/admin/users?status=${filter}` : '/api/admin/users';
+            const data = await apiRequest(url);
+            const tbody = document.getElementById('users-tbody');
+            tbody.innerHTML = data.data.map(u => `
+                <tr>
+                    <td>${u.id}</td>
+                    <td><strong>${u.username}</strong></td>
+                    <td>${u.email}</td>
+                    <td><span class="status-badge approved">${u.role}</span></td>
+                    <td><span class="status-badge ${u.status}">${u.status}</span></td>
+                    <td>${new Date(u.created_at).toLocaleDateString()}</td>
+                    <td>
+                        ${u.status === 'pending' ? `
+                            <button class="btn btn-success btn-sm" onclick="approveUser(${u.id})"><i class="fas fa-check"></i></button>
+                            <button class="btn btn-danger btn-sm" onclick="rejectUser(${u.id})"><i class="fas fa-times"></i></button>
+                        ` : ''}
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">No users found</td></tr>';
+        }
+
+        async function approveUser(id) {
+            try {
+                const data = await apiRequest(`/api/admin/users/${id}/approve`, { method: 'POST' });
+                showToast(data.message, 'success');
+                loadUsers(); loadStats();
+            } catch (e) { showToast(e.error || 'Failed', 'error'); }
+        }
+
+        async function rejectUser(id) {
+            try {
+                const data = await apiRequest(`/api/admin/users/${id}/reject`, { method: 'POST' });
+                showToast(data.message, 'success');
+                loadUsers(); loadStats();
+            } catch (e) { showToast(e.error || 'Failed', 'error'); }
+        }
+
+        async function loadKeys() {
+            const data = await apiRequest('/api/admin/keys');
+            const tbody = document.getElementById('keys-tbody');
+            tbody.innerHTML = data.data.map(k => `
+                <tr>
+                    <td>${k.id}</td>
+                    <td>${k.username}</td>
+                    <td style="font-family:var(--font-mono);font-size:0.8rem">${k.key.substring(0, 20)}...</td>
+                    <td>${k.scope}</td>
+                    <td>${k.is_active ? '<span class="status-badge approved">Active</span>' : '<span class="status-badge rejected">Revoked</span>'}</td>
+                    <td>${new Date(k.created_at).toLocaleDateString()}</td>
+                    <td>${k.last_used ? new Date(k.last_used).toLocaleDateString() : 'Never'}</td>
+                    <td>
+                        ${k.is_active ? `<button class="btn btn-danger btn-sm" onclick="revokeKey(${k.id})">Revoke</button>` : ''}
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">No API keys</td></tr>';
+        }
+
+        async function revokeKey(id) {
+            try {
+                await apiRequest(`/api/admin/keys/${id}/revoke`, { method: 'POST' });
+                showToast('API key revoked', 'success');
+                loadKeys();
+            } catch (e) { showToast(e.error || 'Failed', 'error'); }
+        }
+
+        async function loadAudit() {
+            const data = await apiRequest('/api/admin/audit?limit=50');
+            const tbody = document.getElementById('audit-tbody');
+            tbody.innerHTML = data.data.map(l => `
+                <tr>
+                    <td>${l.id}</td>
+                    <td>${l.user_id || '-'}</td>
+                    <td><strong>${l.action}</strong></td>
+                    <td>${l.resource || '-'}</td>
+                    <td style="font-family:var(--font-mono);font-size:0.8rem">${l.ip_address || '-'}</td>
+                    <td>${new Date(l.created_at).toLocaleString()}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">No logs</td></tr>';
+        }
+    </script>
+</body>
+
+</html>

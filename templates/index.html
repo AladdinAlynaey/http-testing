@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTTP Playground - Learn APIs, CURL & HTTP</title>
+    <meta name="description" content="Production-grade educational HTTP playground for learning REST APIs, CURL commands, HTTP methods, security, and automation.">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-inner">
+            <a href="/" class="logo">
+                <div class="logo-icon"><i class="fas fa-code"></i></div>
+                HTTP Playground
+            </a>
+            <nav class="nav">
+                <a href="/"><i class="fas fa-home"></i> <span>Home</span></a>
+                <a href="/docs"><i class="fas fa-book"></i> <span>Docs</span></a>
+                <div id="auth-nav">
+                    <a href="/login"><i class="fas fa-sign-in-alt"></i> <span>Login</span></a>
+                    <a href="/register" class="btn-primary"><i class="fas fa-user-plus"></i> <span>Register</span></a>
+                </div>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+        <h1>Master HTTP & REST APIs</h1>
+        <p>A production-grade playground to learn HTTP requests, REST APIs, CURL commands, authentication, and API security — with real endpoints you can test right now.</p>
+        <div class="hero-badges">
+            <span class="badge beginner"><i class="fas fa-seedling"></i> 15 Beginner Scenarios</span>
+            <span class="badge intermediate"><i class="fas fa-fire"></i> 10 Intermediate Scenarios</span>
+            <span class="badge advanced"><i class="fas fa-rocket"></i> 5 Advanced + AI Scenarios</span>
+        </div>
+    </section>
+
+    <!-- Main -->
+    <main class="main">
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <h2>API Modules</h2>
+                <span class="count" id="modules-count">10 modules</span>
+            </div>
+            <div class="toolbar-right">
+                <select class="filter-select" onchange="renderModuleCards(this.value)">
+                    <option value="all">All Levels</option>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                </select>
+                <div class="view-toggle">
+                    <button data-view="grid" class="active" onclick="setView('grid')" title="Grid view"><i class="fas fa-th-large"></i></button>
+                    <button data-view="list" onclick="setView('list')" title="List view"><i class="fas fa-list"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="cards-grid" id="modules-grid"></div>
+
+        <!-- Quick Start Section -->
+        <section style="margin-top:60px">
+            <h2 style="text-align:center;margin-bottom:8px">⚡ Quick Start</h2>
+            <p style="text-align:center;color:var(--text-secondary);margin-bottom:32px">Try these CURL commands right now — no authentication needed</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:16px">
+                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/books</code></div>
+                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/weather?city=tokyo</code></div>
+                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"My First Task"}'</code></div>
+                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/echo</code></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="/docs">Documentation</a>
+            <a href="/docs#curl-examples">CURL Examples</a>
+            <a href="/docs#security">Security</a>
+        </div>
+        <p class="footer-text">
+            Built by <strong>Alaadin</strong> &nbsp;•&nbsp;
+            Powered by AI via <a href="https://openrouter.ai" target="_blank">OpenRouter</a> &nbsp;•&nbsp;
+            &copy; 2026 HTTP Playground
+        </p>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

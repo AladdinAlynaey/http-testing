@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - HTTP Playground</title>
+    <meta name="description"
+        content="Complete API documentation with 30+ CURL examples, authentication guide, security rules, and n8n integration tutorials.">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+    <div class="bg-grid"></div>
+
+    <header class="header">
+        <div class="header-inner">
+            <a href="/" class="logo">
+                <div class="logo-icon"><i class="fas fa-code"></i></div>
+                HTTP Playground
+            </a>
+            <nav class="nav">
+                <a href="/"><i class="fas fa-home"></i> <span>Home</span></a>
+                <a href="/docs" style="color:var(--accent)"><i class="fas fa-book"></i> <span>Docs</span></a>
+                <div id="auth-nav">
+                    <a href="/login"><i class="fas fa-sign-in-alt"></i> <span>Login</span></a>
+                    <a href="/register" class="btn-primary"><i class="fas fa-user-plus"></i> <span>Register</span></a>
+                </div>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="docs-layout">
+            <!-- Sidebar -->
+            <aside class="docs-sidebar">
+                <div class="section-title">Getting Started</div>
+                <a href="#overview">Platform Overview</a>
+                <a href="#quickstart">Quick Start</a>
+                <a href="#base-url">Base URL</a>
+
+                <div class="section-title">Authentication</div>
+                <a href="#roles">Role System</a>
+                <a href="#auth">Authentication Guide</a>
+                <a href="#api-keys">API Keys</a>
+
+                <div class="section-title">API Modules</div>
+                <a href="#api-books">📚 Library</a>
+                <a href="#api-menu">🍽️ Restaurant</a>
+                <a href="#api-tasks">✅ Tasks</a>
+                <a href="#api-students">🎓 Students</a>
+                <a href="#api-notes">📝 Notes</a>
+                <a href="#api-files">📁 Files</a>
+                <a href="#api-blog">✍️ Blog</a>
+                <a href="#api-inventory">📦 Inventory</a>
+                <a href="#api-weather">🌤️ Weather</a>
+                <a href="#api-ai">🤖 AI Assistant</a>
+
+                <div class="section-title">Utilities</div>
+                <a href="#echo">Echo Endpoint</a>
+                <a href="#status-codes">Status Codes</a>
+                <a href="#headers">Headers Inspector</a>
+
+                <div class="section-title">Reference</div>
+                <a href="#curl-examples">CURL Examples</a>
+                <a href="#error-codes">Error Codes</a>
+                <a href="#rate-limits">Rate Limits</a>
+                <a href="#security">Security</a>
+                <a href="#n8n">n8n Integration</a>
+                <a href="#ai-guide">AI Usage Guide</a>
+            </aside>
+
+            <!-- Documentation Content -->
+            <div class="docs-content">
+
+                <!-- Overview -->
+                <section class="docs-section" id="overview">
+                    <h2><i class="fas fa-info-circle" style="color:var(--accent)"></i> Platform Overview</h2>
+                    <p>HTTP Playground is a <strong>production-grade educational platform</strong> for learning HTTP
+                        requests, REST APIs, CURL commands, authentication, security, and automation through hands-on
+                        practice with real API endpoints.</p>
+                    <h3>What You'll Learn</h3>
+                    <ul>
+                        <li>HTTP methods (GET, POST, PUT, DELETE, PATCH)</li>
+                        <li>RESTful API design and best practices</li>
+                        <li>CURL command-line usage</li>
+                        <li>API authentication (JWT tokens & API keys)</li>
+                        <li>File uploads via API</li>
+                        <li>AI-powered endpoints (OpenRouter integration)</li>
+                        <li>API security and rate limiting</li>
+                        <li>n8n workflow automation</li>
+                    </ul>
+                    <h3>Difficulty Levels</h3>
+                    <ul>
+                        <li><span class="card-badge beginner">Beginner</span> — No authentication needed. 15 scenarios
+                            using public endpoints.</li>
+                        <li><span class="card-badge intermediate">Intermediate</span> — Requires API key. 10 scenarios
+                            with CRUD operations.</li>
+                        <li><span class="card-badge advanced">Advanced</span> — Requires login. 5 AI-powered scenarios.
+                        </li>
+                    </ul>
+                </section>
+
+                <!-- Quick Start -->
+                <section class="docs-section" id="quickstart">
+                    <h2><i class="fas fa-bolt" style="color:var(--warning)"></i> Quick Start</h2>
+                    <p>Open your terminal and try these commands immediately — no setup required:</p>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Get all books
+curl https://n8nhttp.alaadin-alynaey.site/api/books</code></div>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Check the weather in Tokyo
+curl https://n8nhttp.alaadin-alynaey.site/api/weather?city=tokyo</code></div>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Create a new task
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Learn REST APIs","priority":"high"}'</code></div>
+                </section>
+
+                <!-- Base URL -->
+                <section class="docs-section" id="base-url">
+                    <h2><i class="fas fa-globe" style="color:var(--info)"></i> Base URL</h2>
+                    <div class="code-block"><code>https://n8nhttp.alaadin-alynaey.site</code></div>
+                    <p>All API endpoints are prefixed with <code>/api/</code>. For example: <code>/api/books</code></p>
+                </section>
+
+                <!-- Roles -->
+                <section class="docs-section" id="roles">
+                    <h2><i class="fas fa-users" style="color:var(--accent)"></i> Role System</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Role</th>
+                                <th>Access Level</th>
+                                <th>How to Get</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Visitor</strong></td>
+                                <td>Public endpoints only (beginner)</td>
+                                <td>No login needed</td>
+                            </tr>
+                            <tr>
+                                <td><strong>User</strong></td>
+                                <td>API key + intermediate endpoints</td>
+                                <td>Register → Admin approves</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Admin</strong></td>
+                                <td>User management, key management</td>
+                                <td>Super admin promotes</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Super Admin</strong></td>
+                                <td>Full platform control</td>
+                                <td>Defined in .env only</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Auth Guide -->
+                <section class="docs-section" id="auth">
+                    <h2><i class="fas fa-lock" style="color:var(--warning)"></i> Authentication Guide</h2>
+                    <h3>Step 1: Register an Account</h3>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"myuser","email":"me@example.com","password":"mypassword123"}'</code></div>
+
+                    <h3>Step 2: Wait for Admin Approval</h3>
+                    <p>Your account starts in <code>pending</code> status. An admin must approve it before you can
+                        login.</p>
+
+                    <h3>Step 3: Login</h3>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"myuser","password":"mypassword123"}'</code></div>
+                    <p>Response includes <code>access_token</code>, <code>refresh_token</code>, and
+                        <code>api_key</code>.</p>
+
+                    <h3>Step 4: Use Your Token</h3>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Using JWT token
+curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  https://n8nhttp.alaadin-alynaey.site/api/auth/me
+
+# Using API key
+curl -H "X-API-Key: YOUR_API_KEY" \
+  https://n8nhttp.alaadin-alynaey.site/api/students</code></div>
+                </section>
+
+                <!-- API Keys -->
+                <section class="docs-section" id="api-keys">
+                    <h2><i class="fas fa-key" style="color:var(--success)"></i> API Keys</h2>
+                    <p>API keys are automatically generated when your account is approved. Pass your key using:</p>
+                    <ul>
+                        <li>Header: <code>X-API-Key: nhk_your_key_here</code></li>
+                        <li>Query parameter: <code>?api_key=nhk_your_key_here</code></li>
+                    </ul>
+                    <p>API keys grant access to intermediate endpoints (Students, Files, Blog write, Inventory).</p>
+                </section>
+
+                <!-- ====== API MODULES ====== -->
+
+                <!-- Books -->
+                <section class="docs-section" id="api-books">
+                    <h2>📚 Library System <span class="card-badge beginner">Beginner</span></h2>
+                    <p>Manage a collection of books. Full CRUD with search and genre filtering.</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Endpoint</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="method-badge get">GET</span></td>
+                                <td>/api/books</td>
+                                <td>List all books</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge get">GET</span></td>
+                                <td>/api/books/:id</td>
+                                <td>Get single book</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge post">POST</span></td>
+                                <td>/api/books</td>
+                                <td>Create a book</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge put">PUT</span></td>
+                                <td>/api/books/:id</td>
+                                <td>Update a book</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge delete">DELETE</span></td>
+                                <td>/api/books/:id</td>
+                                <td>Delete a book</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <h3>Query Parameters</h3>
+                    <ul>
+                        <li><code>genre</code> — Filter by genre (e.g., Fiction, Technology)</li>
+                        <li><code>search</code> — Search in title and author</li>
+                    </ul>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Search books by genre
+curl "https://n8nhttp.alaadin-alynaey.site/api/books?genre=Fiction"
+
+# Create a new book
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/books \
+  -H "Content-Type: application/json" \
+  -d '{"title":"The Art of Code","author":"John Dev","genre":"Technology","year":2024}'</code></div>
+                </section>
+
+                <!-- Menu -->
+                <section class="docs-section" id="api-menu">
+                    <h2>🍽️ Restaurant Menu <span class="card-badge beginner">Beginner</span></h2>
+                    <p>Manage restaurant menu items with categories and availability.</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Endpoint</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="method-badge get">GET</span></td>
+                                <td>/api/menu</td>
+                                <td>List all items</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge get">GET</span></td>
+                                <td>/api/menu/:id</td>
+                                <td>Get single item</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge post">POST</span></td>
+                                <td>/api/menu</td>
+                                <td>Create item</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge put">PUT</span></td>
+                                <td>/api/menu/:id</td>
+                                <td>Update item</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge delete">DELETE</span></td>
+                                <td>/api/menu/:id</td>
+                                <td>Delete item</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Get all appetizers
+curl "https://n8nhttp.alaadin-alynaey.site/api/menu?category=Appetizer"
+
+# Add a new menu item
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/menu \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Sushi Platter","price":32.99,"category":"Main Course","description":"Fresh assorted sushi"}'</code>
+                    </div>
+                </section>
+
+                <!-- Tasks -->
+                <section class="docs-section" id="api-tasks">
+                    <h2>✅ Task Manager <span class="card-badge beginner">Beginner</span></h2>
+                    <p>Manage tasks with status tracking and priority levels.</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Endpoint</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="method-badge get">GET</span></td>
+                                <td>/api/tasks</td>
+                                <td>List tasks</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge get">GET</span></td>
+                                <td>/api/tasks/:id</td>
+                                <td>Get task</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge post">POST</span></td>
+                                <td>/api/tasks</td>
+                                <td>Create task</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge put">PUT</span></td>
+                                <td>/api/tasks/:id</td>
+                                <td>Update task</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge delete">DELETE</span></td>
+                                <td>/api/tasks/:id</td>
+                                <td>Delete task</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Get high priority tasks
+curl "https://n8nhttp.alaadin-alynaey.site/api/tasks?priority=high"
+
+# Create a task
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Complete API tutorial","priority":"high","status":"in_progress"}'
+
+# Update task status
+curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/tasks/1 \
+  -H "Content-Type: application/json" \
+  -d '{"status":"completed"}'</code></div>
+                </section>
+
+                <!-- Students -->
+                <section class="docs-section" id="api-students">
+                    <h2>🎓 Student Management <span class="card-badge intermediate">Intermediate</span></h2>
+                    <p>Manage student records. <strong>Read is public, write requires API key.</strong></p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Endpoint</th>
+                                <th>Auth</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="method-badge get">GET</span></td>
+                                <td>/api/students</td>
+                                <td>None</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge post">POST</span></td>
+                                <td>/api/students</td>
+                                <td>API Key</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge put">PUT</span></td>
+                                <td>/api/students/:id</td>
+                                <td>API Key</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge delete">DELETE</span></td>
+                                <td>/api/students/:id</td>
+                                <td>API Key</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Get all students (public)
+curl https://n8nhttp.alaadin-alynaey.site/api/students
+
+# Create a student (requires API key)
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/students \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -d '{"name":"Sara Ahmad","email":"sara@uni.edu","student_id":"STU004","major":"Engineering","gpa":3.7}'</code></div>
+                </section>
+
+                <!-- Notes -->
+                <section class="docs-section" id="api-notes">
+                    <h2>📝 Notes System <span class="card-badge beginner">Beginner</span></h2>
+                    <p>Create and manage notes with categories and pinning.</p>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Get all notes
+curl https://n8nhttp.alaadin-alynaey.site/api/notes
+
+# Create a pinned note
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/notes \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Important Reminder","content":"Review API security","category":"Work","is_pinned":1}'</code></div>
+                </section>
+
+                <!-- Files -->
+                <section class="docs-section" id="api-files">
+                    <h2>📁 File Manager <span class="card-badge intermediate">Intermediate</span></h2>
+                    <p>Upload and download files. Learn multipart form data. <strong>Requires API key.</strong></p>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># List all files (public)
+curl https://n8nhttp.alaadin-alynaey.site/api/files
+
+# Upload a file (requires API key)
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/files/upload \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -F "file=@document.pdf"
+
+# Download a file
+curl -O https://n8nhttp.alaadin-alynaey.site/api/files/download/1</code></div>
+                    <p>Allowed types: txt, pdf, png, jpg, jpeg, gif, csv, json. Max size: 5MB.</p>
+                </section>
+
+                <!-- Blog -->
+                <section class="docs-section" id="api-blog">
+                    <h2>✍️ Blog Platform <span class="card-badge beginner">Beginner</span> <span
+                            class="card-badge intermediate">Intermediate</span></h2>
+                    <p>Read blog posts publicly, create/edit with API key.</p>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Get all blog posts (public)
+curl https://n8nhttp.alaadin-alynaey.site/api/blog
+
+# Filter by tag
+curl "https://n8nhttp.alaadin-alynaey.site/api/blog?tag=security"
+
+# Create a blog post (API key required)
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/blog \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -d '{"title":"My API Journey","content":"Today I learned about REST APIs...","tags":"learning,api"}'</code></div>
+                </section>
+
+                <!-- Inventory -->
+                <section class="docs-section" id="api-inventory">
+                    <h2>📦 Inventory System <span class="card-badge intermediate">Intermediate</span></h2>
+                    <p>Track inventory across warehouses with stock monitoring.</p>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Get inventory (public read)
+curl https://n8nhttp.alaadin-alynaey.site/api/inventory
+
+# Get low stock items
+curl "https://n8nhttp.alaadin-alynaey.site/api/inventory?low_stock=true"
+
+# Add inventory item (API key required)
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/inventory \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -d '{"name":"Keyboard","sku":"KEY-005","quantity":100,"price":49.99,"category":"Accessories"}'</code></div>
+                </section>
+
+                <!-- Weather -->
+                <section class="docs-section" id="api-weather">
+                    <h2>🌤️ Mock Weather API <span class="card-badge beginner">Beginner</span></h2>
+                    <p>Practice with weather data for 10 cities. No auth needed.</p>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Get all cities
+curl https://n8nhttp.alaadin-alynaey.site/api/weather
+
+# Get weather for London
+curl "https://n8nhttp.alaadin-alynaey.site/api/weather?city=london"
+
+# Compare two cities
+curl "https://n8nhttp.alaadin-alynaey.site/api/weather/compare?city1=dubai&city2=moscow"</code></div>
+                    <p>Available cities: London, New York, Tokyo, Paris, Dubai, Berlin, Sydney, Cairo, Moscow, Baghdad
+                    </p>
+                </section>
+
+                <!-- AI -->
+                <section class="docs-section" id="api-ai">
+                    <h2>🤖 AI Assistant <span class="card-badge advanced">Advanced</span></h2>
+                    <p>AI-powered endpoints using OpenRouter. <strong>Requires login (JWT).</strong></p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Endpoint</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="method-badge post">POST</span></td>
+                                <td>/api/ai/generate</td>
+                                <td>Generate text from prompt</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge post">POST</span></td>
+                                <td>/api/ai/summarize</td>
+                                <td>Summarize long text</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge post">POST</span></td>
+                                <td>/api/ai/classify</td>
+                                <td>Classify text into categories</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge post">POST</span></td>
+                                <td>/api/ai/validate</td>
+                                <td>Validate grammar/code/email</td>
+                            </tr>
+                            <tr>
+                                <td><span class="method-badge post">POST</span></td>
+                                <td>/api/ai/chat</td>
+                                <td>Interactive AI chat</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Generate text (requires JWT token)
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/generate \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"prompt":"Explain REST APIs in simple terms"}'
+
+# Classify text
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/classify \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"text":"Python is a great programming language","categories":["Technology","Science","Sports"]}'</code></div>
+                </section>
+
+                <!-- Utility Endpoints -->
+                <section class="docs-section" id="echo">
+                    <h2><i class="fas fa-exchange-alt" style="color:var(--info)"></i> Echo Endpoint</h2>
+                    <p>Returns everything about your request — perfect for learning HTTP.</p>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># See your full request details
+curl https://n8nhttp.alaadin-alynaey.site/api/echo
+
+# POST with custom headers
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/echo \
+  -H "Content-Type: application/json" \
+  -H "X-Custom-Header: hello-world" \
+  -d '{"key":"value"}'</code></div>
+                </section>
+
+                <section class="docs-section" id="status-codes">
+                    <h2><i class="fas fa-hashtag" style="color:var(--warning)"></i> HTTP Status Codes</h2>
+                    <p>Learn HTTP status codes by requesting them.</p>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Get info about status code 404
+curl https://n8nhttp.alaadin-alynaey.site/api/status-codes/404
+
+# Try different codes: 200, 201, 301, 400, 401, 403, 429, 500
+curl https://n8nhttp.alaadin-alynaey.site/api/status-codes/201</code></div>
+                </section>
+
+                <section class="docs-section" id="headers">
+                    <h2><i class="fas fa-bars" style="color:var(--success)"></i> Headers Inspector</h2>
+                    <p>See what headers your client sends.</p>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># See your request headers
+curl https://n8nhttp.alaadin-alynaey.site/api/headers
+
+# Send custom headers
+curl https://n8nhttp.alaadin-alynaey.site/api/headers \
+  -H "X-My-Header: testing123" \
+  -H "Accept-Language: en-US"</code></div>
+                </section>
+
+                <!-- CURL Examples -->
+                <section class="docs-section" id="curl-examples">
+                    <h2><i class="fas fa-terminal" style="color:var(--accent)"></i> CURL Examples (30+)</h2>
+                    <p>Complete collection of tested CURL commands organized by difficulty.</p>
+
+                    <h3>🟢 Beginner (No Auth)</h3>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># 1. GET all books
+curl https://n8nhttp.alaadin-alynaey.site/api/books
+
+# 2. GET a single book
+curl https://n8nhttp.alaadin-alynaey.site/api/books/1
+
+# 3. Search books
+curl "https://n8nhttp.alaadin-alynaey.site/api/books?search=gatsby"
+
+# 4. POST create a book
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/books \
+  -H "Content-Type: application/json" \
+  -d '{"title":"New Book","author":"Author Name","genre":"Fiction"}'
+
+# 5. PUT update a book
+curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/books/1 \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Updated Title"}'
+
+# 6. DELETE a book
+curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/books/1
+
+# 7. GET restaurant menu
+curl https://n8nhttp.alaadin-alynaey.site/api/menu
+
+# 8. GET menu by category
+curl "https://n8nhttp.alaadin-alynaey.site/api/menu?category=Dessert"
+
+# 9. POST create menu item
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/menu \
+  -H "Content-Type: application/json" \
+  -d '{"name":"French Fries","price":5.99,"category":"Side"}'
+
+# 10. GET all tasks
+curl https://n8nhttp.alaadin-alynaey.site/api/tasks
+
+# 11. GET tasks by status
+curl "https://n8nhttp.alaadin-alynaey.site/api/tasks?status=pending"
+
+# 12. POST create a task
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"My Task","priority":"high"}'
+
+# 13. GET all notes
+curl https://n8nhttp.alaadin-alynaey.site/api/notes
+
+# 14. GET weather for a city
+curl "https://n8nhttp.alaadin-alynaey.site/api/weather?city=paris"
+
+# 15. Compare weather between cities
+curl "https://n8nhttp.alaadin-alynaey.site/api/weather/compare?city1=london&city2=dubai"
+
+# 16. Echo endpoint
+curl https://n8nhttp.alaadin-alynaey.site/api/echo
+
+# 17. View your request headers
+curl https://n8nhttp.alaadin-alynaey.site/api/headers
+
+# 18. HTTP status code demo
+curl https://n8nhttp.alaadin-alynaey.site/api/status-codes/404
+
+# 19. API info
+curl https://n8nhttp.alaadin-alynaey.site/api/info
+
+# 20. Health check
+curl https://n8nhttp.alaadin-alynaey.site/api/health</code></div>
+
+                    <h3>🟡 Intermediate (API Key)</h3>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># 21. Create a student
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/students \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -d '{"name":"Test Student","email":"test@uni.edu","major":"CS","gpa":3.5}'
+
+# 22. Upload a file
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/files/upload \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -F "file=@test.txt"
+
+# 23. Create a blog post
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/blog \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -d '{"title":"My Post","content":"Hello world!"}'
+
+# 24. Add inventory item
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/inventory \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -d '{"name":"Widget","sku":"WDG-001","quantity":42,"price":12.99}'
+
+# 25. Update a student
+curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/students/1 \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -d '{"gpa":3.9}'
+
+# 26. Delete a student
+curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/students/1 \
+  -H "X-API-Key: YOUR_API_KEY"
+
+# 27. Update inventory quantity
+curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/inventory/1 \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -d '{"quantity":75}'
+
+# 28. Register a new account
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"newuser","email":"new@test.com","password":"pass12345"}'
+
+# 29. Login
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"newuser","password":"pass12345"}'
+
+# 30. Refresh your token
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refresh_token":"YOUR_REFRESH_TOKEN"}'</code></div>
+
+                    <h3>🔴 Advanced (Login + JWT)</h3>
+                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># 31. AI Text Generation
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/generate \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"prompt":"Write a haiku about APIs"}'
+
+# 32. AI Summarization
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/summarize \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"text":"REST APIs use standard HTTP methods. GET retrieves data. POST creates new resources. PUT updates existing resources. DELETE removes resources. This follows CRUD principles and makes APIs intuitive to use."}'
+
+# 33. AI Classification
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/classify \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"text":"Machine learning is transforming healthcare"}'
+
+# 34. AI Validation (Grammar check)
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/validate \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"text":"This sentance have many errors in it","type":"grammar"}'
+
+# 35. AI Chat
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"message":"What is the difference between PUT and PATCH?","context":"api"}'</code></div>
+                </section>
+
+                <!-- Error Codes -->
+                <section class="docs-section" id="error-codes">
+                    <h2><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i> Error Codes</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Meaning</th>
+                                <th>Common Cause</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>400</td>
+                                <td>Bad Request</td>
+                                <td>Missing required fields or invalid data</td>
+                            </tr>
+                            <tr>
+                                <td>401</td>
+                                <td>Unauthorized</td>
+                                <td>Missing or invalid token/API key</td>
+                            </tr>
+                            <tr>
+                                <td>403</td>
+                                <td>Forbidden</td>
+                                <td>Account not approved or insufficient role</td>
+                            </tr>
+                            <tr>
+                                <td>404</td>
+                                <td>Not Found</td>
+                                <td>Resource doesn't exist</td>
+                            </tr>
+                            <tr>
+                                <td>409</td>
+                                <td>Conflict</td>
+                                <td>Duplicate username/email</td>
+                            </tr>
+                            <tr>
+                                <td>413</td>
+                                <td>Too Large</td>
+                                <td>File exceeds 5MB limit</td>
+                            </tr>
+                            <tr>
+                                <td>429</td>
+                                <td>Rate Limited</td>
+                                <td>Too many requests</td>
+                            </tr>
+                            <tr>
+                                <td>500</td>
+                                <td>Server Error</td>
+                                <td>Internal server issue</td>
+                            </tr>
+                            <tr>
+                                <td>503</td>
+                                <td>Unavailable</td>
+                                <td>AI service not configured</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- Rate Limits -->
+                <section class="docs-section" id="rate-limits">
+                    <h2><i class="fas fa-tachometer-alt" style="color:var(--warning)"></i> Rate Limits</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Endpoint Type</th>
+                                <th>Limit</th>
+                                <th>Window</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>General API</td>
+                                <td>200 requests</td>
+                                <td>Per minute</td>
+                            </tr>
+                            <tr>
+                                <td>Login</td>
+                                <td>10 attempts</td>
+                                <td>Per minute</td>
+                            </tr>
+                            <tr>
+                                <td>Register</td>
+                                <td>5 attempts</td>
+                                <td>Per minute</td>
+                            </tr>
+                            <tr>
+                                <td>AI Endpoints</td>
+                                <td>10 requests</td>
+                                <td>Per minute</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p>Exceeding limits returns <code>429 Too Many Requests</code>. Failed login attempts trigger
+                        account lockout after 5 failures (15 min cooldown).</p>
+                </section>
+
+                <!-- Security -->
+                <section class="docs-section" id="security">
+                    <h2><i class="fas fa-shield-alt" style="color:var(--accent)"></i> Security</h2>
+                    <h3>Security Headers</h3>
+                    <ul>
+                        <li><strong>Content-Security-Policy (CSP)</strong> — Restricts resource loading</li>
+                        <li><strong>Strict-Transport-Security (HSTS)</strong> — Forces HTTPS</li>
+                        <li><strong>X-Frame-Options: DENY</strong> — Prevents clickjacking</li>
+                        <li><strong>X-Content-Type-Options: nosniff</strong> — Prevents MIME sniffing</li>
+                        <li><strong>X-XSS-Protection</strong> — XSS attack mitigation</li>
+                        <li><strong>Referrer-Policy</strong> — Controls referrer information</li>
+                    </ul>
+                    <h3>Protection Measures</h3>
+                    <ul>
+                        <li>JWT-based sessions with expiration & refresh flow</li>
+                        <li>API key authentication with scoping</li>
+                        <li>Rate limiting per IP and endpoint</li>
+                        <li>Brute-force protection with account lockout</li>
+                        <li>Request fingerprinting</li>
+                        <li>Input sanitization with Bleach</li>
+                        <li>Secure file uploads (type/size validation)</li>
+                        <li>Full audit logging of all sensitive actions</li>
+                        <li>CORS with strict origin whitelisting</li>
+                    </ul>
+                </section>
+
+                <!-- n8n Integration -->
+                <section class="docs-section" id="n8n">
+                    <h2><i class="fas fa-project-diagram" style="color:var(--info)"></i> n8n Integration</h2>
+                    <p>Use this API with <a href="https://n8n.io" target="_blank">n8n</a> for workflow automation.</p>
+                    <h3>Example: Auto-create tasks from Telegram</h3>
+                    <ol>
+                        <li>Set up an n8n Telegram trigger node</li>
+                        <li>Add an HTTP Request node:
+                            <ul>
+                                <li>Method: POST</li>
+                                <li>URL: <code>https://n8nhttp.alaadin-alynaey.site/api/tasks</code></li>
+                                <li>Headers: <code>Content-Type: application/json</code></li>
+                                <li>Body: <code>{"title": "{{$json.message.text}}", "priority": "medium"}</code></li>
+                            </ul>
+                        </li>
+                    </ol>
+                    <h3>Example: Monitor inventory and send alerts</h3>
+                    <ol>
+                        <li>Schedule trigger (every hour)</li>
+                        <li>HTTP GET: <code>https://n8nhttp.alaadin-alynaey.site/api/inventory?low_stock=true</code>
+                        </li>
+                        <li>IF node: Check if count > 0</li>
+                        <li>Send email/Slack notification with low stock items</li>
+                    </ol>
+                    <h3>Example: Blog to social media</h3>
+                    <ol>
+                        <li>Webhook trigger</li>
+                        <li>Create blog post via API</li>
+                        <li>Share to Twitter/Telegram using n8n social nodes</li>
+                    </ol>
+                </section>
+
+                <!-- AI Guide -->
+                <section class="docs-section" id="ai-guide">
+                    <h2><i class="fas fa-robot" style="color:var(--accent)"></i> AI Usage Guide</h2>
+                    <p>AI endpoints use <a href="https://openrouter.ai" target="_blank">OpenRouter</a> for language
+                        model access.</p>
+                    <h3>Available AI Features</h3>
+                    <ul>
+                        <li><strong>Generate</strong> — Create text from a prompt (max 2000 chars)</li>
+                        <li><strong>Summarize</strong> — Condense long text (20-5000 chars)</li>
+                        <li><strong>Classify</strong> — Categorize text (custom or default categories)</li>
+                        <li><strong>Validate</strong> — Check grammar, code, email, or API responses</li>
+                        <li><strong>Chat</strong> — Interactive learning assistant with context modes</li>
+                    </ul>
+                    <h3>Chat Context Modes</h3>
+                    <ul>
+                        <li><code>general</code> — General teaching assistant</li>
+                        <li><code>api</code> — REST API and HTTP expert</li>
+                        <li><code>security</code> — Cybersecurity expert</li>
+                        <li><code>python</code> — Python programming tutor</li>
+                    </ul>
+                    <h3>Safety</h3>
+                    <ul>
+                        <li>All prompts are sanitized before processing</li>
+                        <li>Output is limited to prevent abuse</li>
+                        <li>10 requests/minute rate limit</li>
+                        <li>All AI interactions are logged for auditing</li>
+                    </ul>
+                </section>
+
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="/">Home</a>
+            <a href="/docs">Documentation</a>
+            <a href="#curl-examples">CURL Examples</a>
+        </div>
+        <p class="footer-text">
+            Built by <strong>Alaadin</strong> &nbsp;•&nbsp;
+            Powered by AI via <a href="https://openrouter.ai" target="_blank">OpenRouter</a> &nbsp;•&nbsp;
+            &copy; 2026 HTTP Playground
+        </p>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        // Active sidebar link highlighting
+        const sections = document.querySelectorAll('.docs-section');
+        const sidebarLinks = document.querySelectorAll('.docs-sidebar a');
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(s => {
+                if (window.scrollY >= s.offsetTop - 100) current = s.id;
+            });
+            sidebarLinks.forEach(a => {
+                a.classList.remove('active');
+                if (a.getAttribute('href') === '#' + current) a.classList.add('active');
+            });
+        });
+    </script>
+</body>
+
+</html>
