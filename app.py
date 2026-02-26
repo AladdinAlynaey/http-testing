@@ -1,6 +1,6 @@
 """
-HTTP Playground & API Training Platform
-Main Flask Application with Security Middleware
+HTTP Playground & API Training Platform v2.0
+Main Flask Application with Security Middleware, Deep Freeze Daemon
 """
 import os
 import time
@@ -23,9 +23,10 @@ from auth import (
     SUPER_ADMIN_USERNAME, SUPER_ADMIN_PASSWORD, SUPER_ADMIN_EMAIL
 )
 from modules import modules_bp
+from freeze import start_freeze_daemon
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_UPLOAD_SIZE', 5242880))
+app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_UPLOAD_SIZE', 2097152))  # 2MB
 
 # ============================================================
 # CORS - Strict Configuration
@@ -39,7 +40,7 @@ CORS(app, resources={
         ],
         "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization", "X-API-Key"],
-        "expose_headers": ["X-RateLimit-Remaining", "X-Request-Id"],
+        "expose_headers": ["X-RateLimit-Remaining", "X-Request-Id", "X-API-Requests-Remaining", "X-API-Requests-Max"],
         "max_age": 600
     }
 })
@@ -198,7 +199,10 @@ def login():
 
     # Get API key
     db = get_db()
-    key_row = db.execute("SELECT key FROM api_keys WHERE user_id=? AND is_active=1", (user['id'],)).fetchone()
+    key_row = db.execute(
+        "SELECT key, request_count, max_requests FROM api_keys WHERE user_id=? AND is_active=1 ORDER BY id DESC LIMIT 1",
+        (user['id'],)
+    ).fetchone()
     db.close()
 
     return jsonify({
@@ -206,6 +210,11 @@ def login():
         'access_token': token,
         'refresh_token': refresh,
         'api_key': key_row['key'] if key_row else None,
+        'api_key_info': {
+            'requests_used': key_row['request_count'],
+            'requests_remaining': key_row['max_requests'] - key_row['request_count'],
+            'max_requests': key_row['max_requests']
+        } if key_row else None,
         'user': {
             'id': user['id'],
             'username': user['username'],
@@ -250,14 +259,68 @@ def get_me():
     db = get_db()
     row = db.execute("SELECT id,username,email,role,status,created_at FROM users WHERE id=?",
                      (user['user_id'],)).fetchone()
-    key_row = db.execute("SELECT key,scope,created_at,last_used FROM api_keys WHERE user_id=? AND is_active=1",
-                         (user['user_id'],)).fetchone()
+    key_row = db.execute(
+        "SELECT key,scope,request_count,max_requests,created_at,last_used FROM api_keys WHERE user_id=? AND is_active=1 ORDER BY id DESC LIMIT 1",
+        (user['user_id'],)
+    ).fetchone()
     db.close()
     if not row:
         return jsonify({'error': 'User not found'}), 404
     data = dict(row)
-    data['api_key'] = dict(key_row) if key_row else None
+    if key_row:
+        kd = dict(key_row)
+        kd['requests_remaining'] = kd['max_requests'] - kd['request_count']
+        data['api_key'] = kd
+    else:
+        data['api_key'] = None
     return jsonify({'data': data})
+
+
+# ============================================================
+# API KEY MANAGEMENT
+# ============================================================
+@app.route('/api/auth/key-status', methods=['GET'])
+@require_auth
+def key_status():
+    """Check your API key status and remaining requests"""
+    user = g.current_user
+    db = get_db()
+    keys = db.execute(
+        "SELECT id, key, request_count, max_requests, is_active, created_at, last_used FROM api_keys WHERE user_id=? ORDER BY id DESC",
+        (user['user_id'],)
+    ).fetchall()
+    db.close()
+    result = []
+    for k in keys:
+        kd = dict(k)
+        kd['requests_remaining'] = max(0, kd['max_requests'] - kd['request_count'])
+        result.append(kd)
+    return jsonify({'data': result, 'count': len(result)})
+
+
+@app.route('/api/auth/regenerate-key', methods=['POST'])
+@require_auth
+def regenerate_key():
+    """Deactivate old key and generate a new one with 20 fresh requests"""
+    user = g.current_user
+    db = get_db()
+    # Deactivate all old keys
+    db.execute("UPDATE api_keys SET is_active=0 WHERE user_id=?", (user['user_id'],))
+    # Generate new key
+    new_key = generate_api_key()
+    db.execute(
+        "INSERT INTO api_keys (user_id, key, scope, request_count, max_requests) VALUES (?,?,?,0,20)",
+        (user['user_id'], new_key, 'intermediate')
+    )
+    db.commit()
+    db.close()
+    log_audit(user['user_id'], 'regenerate_key', 'auth')
+    return jsonify({
+        'message': 'New API key generated! You have 20 fresh requests.',
+        'api_key': new_key,
+        'requests_remaining': 20,
+        'max_requests': 20
+    })
 
 
 # ============================================================
@@ -293,17 +356,17 @@ def admin_approve_user(user_id):
 
     db.execute("UPDATE users SET status='approved', updated_at=CURRENT_TIMESTAMP WHERE id=?", (user_id,))
 
-    # Generate API key for approved user
+    # Generate API key for approved user (20 requests)
     api_key = generate_api_key()
     db.execute(
-        "INSERT INTO api_keys (user_id, key, scope) VALUES (?,?,?)",
+        "INSERT INTO api_keys (user_id, key, scope, request_count, max_requests) VALUES (?,?,?,0,20)",
         (user_id, api_key, 'intermediate')
     )
     db.commit()
     db.close()
     log_audit(g.current_user.get('user_id'), 'approve_user', f'user:{user_id}')
     return jsonify({
-        'message': f'User {user["username"]} approved',
+        'message': f'User {user["username"]} approved with API key (20 requests)',
         'api_key': api_key
     })
 
@@ -359,10 +422,16 @@ def admin_delete_user(user_id):
 def admin_list_keys():
     db = get_db()
     rows = db.execute(
-        "SELECT ak.*, u.username FROM api_keys ak JOIN users u ON ak.user_id = u.id ORDER BY ak.created_at DESC"
+        """SELECT ak.*, u.username FROM api_keys ak JOIN users u ON ak.user_id = u.id
+           ORDER BY ak.created_at DESC"""
     ).fetchall()
     db.close()
-    return jsonify({'data': [dict(r) for r in rows]})
+    result = []
+    for r in rows:
+        d = dict(r)
+        d['requests_remaining'] = max(0, d['max_requests'] - d['request_count'])
+        result.append(d)
+    return jsonify({'data': result})
 
 
 @app.route('/api/admin/keys/<int:key_id>/revoke', methods=['POST'])
@@ -398,6 +467,9 @@ def admin_stats():
         'total_books': db.execute("SELECT COUNT(*) FROM books").fetchone()[0],
         'total_tasks': db.execute("SELECT COUNT(*) FROM tasks").fetchone()[0],
         'total_posts': db.execute("SELECT COUNT(*) FROM blog_posts").fetchone()[0],
+        'total_students': db.execute("SELECT COUNT(*) FROM students").fetchone()[0],
+        'total_inventory': db.execute("SELECT COUNT(*) FROM inventory").fetchone()[0],
+        'pending_modifications': db.execute("SELECT COUNT(*) FROM user_modifications").fetchone()[0],
         'recent_logs': db.execute("SELECT COUNT(*) FROM audit_logs WHERE created_at > datetime('now','-24 hours')").fetchone()[0],
     }
     db.close()
@@ -427,6 +499,27 @@ def admin_page():
 def docs_page():
     return render_template('docs.html')
 
+# Module pages — dedicated interactive page per module
+MODULE_INFO = {
+    'books': {'title': 'Library System', 'icon': '📚', 'endpoint': '/api/books', 'table': 'books'},
+    'menu': {'title': 'Restaurant Menu', 'icon': '🍽️', 'endpoint': '/api/menu', 'table': 'menu_items'},
+    'tasks': {'title': 'Task Manager', 'icon': '✅', 'endpoint': '/api/tasks', 'table': 'tasks'},
+    'students': {'title': 'Student Management', 'icon': '🎓', 'endpoint': '/api/students', 'table': 'students'},
+    'notes': {'title': 'Notes System', 'icon': '📝', 'endpoint': '/api/notes', 'table': 'notes'},
+    'files': {'title': 'File Manager', 'icon': '📁', 'endpoint': '/api/files', 'table': 'files'},
+    'blog': {'title': 'Blog Platform', 'icon': '✍️', 'endpoint': '/api/blog', 'table': 'blog_posts'},
+    'inventory': {'title': 'Inventory System', 'icon': '📦', 'endpoint': '/api/inventory', 'table': 'inventory'},
+    'weather': {'title': 'Weather API', 'icon': '🌤️', 'endpoint': '/api/weather', 'table': None},
+    'ai': {'title': 'AI Assistant', 'icon': '🤖', 'endpoint': '/api/ai', 'table': None},
+}
+
+@app.route('/module/<name>')
+def module_page(name):
+    if name not in MODULE_INFO:
+        return render_template('index.html'), 404
+    info = MODULE_INFO[name]
+    return render_template('module.html', module_name=name, module=info)
+
 
 # ============================================================
 # ERROR HANDLERS
@@ -447,7 +540,7 @@ def rate_limited(e):
 
 @app.errorhandler(413)
 def too_large(e):
-    return jsonify({'error': 'Request too large', 'code': 413}), 413
+    return jsonify({'error': 'File too large. Maximum 2MB allowed.', 'code': 413}), 413
 
 @app.errorhandler(500)
 def server_error(e):
@@ -458,6 +551,7 @@ def server_error(e):
 # INITIALIZE
 # ============================================================
 init_db()
+start_freeze_daemon()
 
 if __name__ == '__main__':
     port = int(os.getenv('SERVER_PORT', 5050))

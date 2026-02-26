@@ -132,16 +132,16 @@ function showToast(message, type = 'info') {
 
 // ============ MODULES DATA ============
 const MODULES = [
-    { name: 'Library System', icon: '📚', desc: 'Manage books with full CRUD operations. Search by genre, author, or title. Perfect for learning REST basics.', level: 'beginner', auth: 'None', path: '/api/books', color: '#6366f1' },
-    { name: 'Restaurant Menu', icon: '🍽️', desc: 'Create and manage restaurant menu items. Filter by category, update prices, and control availability.', level: 'beginner', auth: 'None', path: '/api/menu', color: '#ec4899' },
-    { name: 'Task Manager', icon: '✅', desc: 'Organize tasks with priorities and status tracking. Learn about filtering, sorting, and state management.', level: 'beginner', auth: 'None', path: '/api/tasks', color: '#10b981' },
-    { name: 'Student Management', icon: '🎓', desc: 'Manage student records with enrollment data and GPA tracking. Requires API key authentication.', level: 'intermediate', auth: 'API Key', path: '/api/students', color: '#f59e0b' },
-    { name: 'Notes System', icon: '📝', desc: 'Create, pin, and categorize notes. Learn about CRUD operations with additional features like pinning.', level: 'beginner', auth: 'None', path: '/api/notes', color: '#8b5cf6' },
-    { name: 'File Manager', icon: '📁', desc: 'Upload and download files securely. Learn about multipart form data, file validation, and secure storage.', level: 'intermediate', auth: 'API Key', path: '/api/files', color: '#06b6d4' },
-    { name: 'Blog Platform', icon: '✍️', desc: 'Full blog system with posts, tags, and publishing control. Public read, API key required for writing.', level: 'beginner', auth: 'None / API Key', path: '/api/blog', color: '#f97316' },
-    { name: 'Inventory System', icon: '📦', desc: 'Track inventory across warehouses. Monitor stock levels, manage SKUs, and filter by category.', level: 'intermediate', auth: 'API Key', path: '/api/inventory', color: '#14b8a6' },
-    { name: 'Weather API', icon: '🌤️', desc: 'Mock weather data for 10 cities worldwide. Compare temperatures between cities. Great for API practice.', level: 'beginner', auth: 'None', path: '/api/weather', color: '#3b82f6' },
-    { name: 'AI Assistant', icon: '🤖', desc: 'AI-powered text generation, summarization, classification, and validation using OpenRouter. Login required.', level: 'advanced', auth: 'Login', path: '/api/ai/*', color: '#ef4444' },
+    { name: 'Library System', slug: 'books', icon: '📚', desc: 'Manage books with full CRUD operations. Search by genre, author, or title. Perfect for learning REST basics.', level: 'beginner', auth: 'None', path: '/api/books', color: '#6366f1' },
+    { name: 'Restaurant Menu', slug: 'menu', icon: '🍽️', desc: 'Create and manage restaurant menu items. Filter by category, update prices, and control availability.', level: 'beginner', auth: 'None', path: '/api/menu', color: '#ec4899' },
+    { name: 'Task Manager', slug: 'tasks', icon: '✅', desc: 'Organize tasks with priorities and status tracking. Learn about filtering, sorting, and state management.', level: 'beginner', auth: 'None', path: '/api/tasks', color: '#10b981' },
+    { name: 'Student Management', slug: 'students', icon: '🎓', desc: 'Manage student records with enrollment data and GPA tracking. Requires API key authentication.', level: 'intermediate', auth: 'API Key', path: '/api/students', color: '#f59e0b' },
+    { name: 'Notes System', slug: 'notes', icon: '📝', desc: 'Create, pin, and categorize notes. Learn about CRUD operations with additional features like pinning.', level: 'beginner', auth: 'None', path: '/api/notes', color: '#8b5cf6' },
+    { name: 'File Manager', slug: 'files', icon: '📁', desc: 'Upload and download files securely. Learn about multipart form data, file validation, and secure storage.', level: 'intermediate', auth: 'API Key', path: '/api/files', color: '#06b6d4' },
+    { name: 'Blog Platform', slug: 'blog', icon: '✍️', desc: 'Full blog system with posts, tags, and publishing control. Public read, API key required for writing.', level: 'beginner', auth: 'None / API Key', path: '/api/blog', color: '#f97316' },
+    { name: 'Inventory System', slug: 'inventory', icon: '📦', desc: 'Track inventory across warehouses. Monitor stock levels, manage SKUs, and filter by category.', level: 'intermediate', auth: 'API Key', path: '/api/inventory', color: '#14b8a6' },
+    { name: 'Weather API', slug: 'weather', icon: '🌤️', desc: 'Mock weather data for 10 cities worldwide. Compare temperatures between cities. Great for API practice.', level: 'beginner', auth: 'None', path: '/api/weather', color: '#3b82f6' },
+    { name: 'AI Assistant', slug: 'ai', icon: '🤖', desc: 'AI-powered text generation, summarization, classification, and validation using OpenRouter. Login required.', level: 'advanced', auth: 'Login', path: '/api/ai/*', color: '#ef4444' },
 ];
 
 // ============ RENDER CARDS ============
@@ -151,7 +151,7 @@ function renderModuleCards(filter = 'all') {
 
     const filtered = filter === 'all' ? MODULES : MODULES.filter(m => m.level === filter);
     grid.innerHTML = filtered.map(m => `
-        <div class="card" onclick="window.location.href='/docs#${m.path.replace(/\//g, '-').slice(1)}'">
+        <div class="card" onclick="window.location.href='/module/${m.slug}'">
             <div class="card-image-placeholder" style="background:linear-gradient(135deg, ${m.color}22, ${m.color}11)">
                 <span>${m.icon}</span>
             </div>

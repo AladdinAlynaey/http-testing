@@ -2,6 +2,7 @@
 Authentication & Authorization module
 - JWT sessions, API key management, RBAC decorators
 - Brute-force protection, request fingerprinting
+- API key usage tracking (20-request limit)
 """
 import jwt
 import hashlib
@@ -136,15 +137,30 @@ def get_current_user():
             (api_key,)
         ).fetchone()
         if row:
-            db.execute("UPDATE api_keys SET last_used=CURRENT_TIMESTAMP WHERE key=?", (api_key,))
+            # Check request limit
+            if row['request_count'] >= row['max_requests']:
+                db.execute("UPDATE api_keys SET is_active=0 WHERE key=?", (api_key,))
+                db.commit()
+                db.close()
+                return None  # Key exhausted
+
+            # Increment usage counter
+            db.execute(
+                "UPDATE api_keys SET last_used=CURRENT_TIMESTAMP, request_count=request_count+1 WHERE key=?",
+                (api_key,)
+            )
             db.commit()
+            remaining = row['max_requests'] - row['request_count'] - 1
             db.close()
             return {
                 'user_id': row['user_id'],
                 'username': row['username'],
                 'role': row['role'],
                 'scope': row['scope'],
-                'auth_type': 'api_key'
+                'auth_type': 'api_key',
+                'api_key_id': row['id'],
+                'requests_remaining': max(0, remaining),
+                'max_requests': row['max_requests']
             }
         db.close()
 
@@ -157,9 +173,32 @@ def require_auth(f):
     def decorated(*args, **kwargs):
         user = get_current_user()
         if not user:
+            # Check if the key was exhausted
+            api_key = request.headers.get('X-API-Key') or request.args.get('api_key')
+            if api_key:
+                db = get_db()
+                row = db.execute("SELECT request_count, max_requests, is_active FROM api_keys WHERE key=?", (api_key,)).fetchone()
+                db.close()
+                if row and row['request_count'] >= row['max_requests']:
+                    return jsonify({
+                        'error': 'API key expired — all requests used',
+                        'message': f'You used {row["max_requests"]}/{row["max_requests"]} requests. Generate a new key at /api/auth/regenerate-key',
+                        'requests_used': row['request_count'],
+                        'max_requests': row['max_requests'],
+                        'code': 429
+                    }), 429
             return jsonify({'error': 'Authentication required', 'code': 401}), 401
         g.current_user = user
-        return f(*args, **kwargs)
+        response = f(*args, **kwargs)
+        # Add remaining requests header for API key users
+        if isinstance(response, tuple):
+            resp_obj, status = response
+        else:
+            resp_obj, status = response, 200
+        if hasattr(resp_obj, 'headers') and user.get('auth_type') == 'api_key':
+            resp_obj.headers['X-API-Requests-Remaining'] = str(user.get('requests_remaining', 0))
+            resp_obj.headers['X-API-Requests-Max'] = str(user.get('max_requests', 20))
+        return response
     return decorated
 
 
@@ -180,14 +219,41 @@ def require_role(*roles):
 
 
 def require_api_key(scope='basic'):
-    """Decorator: require API key with specific scope"""
+    """Decorator: require API key with specific scope. Tracks usage and enforces 20-request limit."""
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
             user = get_current_user()
             if not user:
-                return jsonify({'error': 'Valid API key required', 'code': 401}), 401
+                # Check if the key was exhausted
+                api_key = request.headers.get('X-API-Key') or request.args.get('api_key')
+                if api_key:
+                    db = get_db()
+                    row = db.execute("SELECT request_count, max_requests, is_active FROM api_keys WHERE key=?", (api_key,)).fetchone()
+                    db.close()
+                    if row and row['request_count'] >= row['max_requests']:
+                        return jsonify({
+                            'error': 'API key expired — all requests used',
+                            'message': f'You used {row["max_requests"]}/{row["max_requests"]} requests. Generate a new key at /api/auth/regenerate-key',
+                            'requests_used': row['request_count'],
+                            'max_requests': row['max_requests'],
+                            'code': 429
+                        }), 429
+                return jsonify({
+                    'error': 'API key required for this operation',
+                    'message': 'Send your API key in the X-API-Key header. Register and login to get one.',
+                    'code': 401
+                }), 401
             g.current_user = user
-            return f(*args, **kwargs)
+            response = f(*args, **kwargs)
+            # Add remaining requests header
+            if isinstance(response, tuple):
+                resp_obj, status = response
+            else:
+                resp_obj, status = response, 200
+            if hasattr(resp_obj, 'headers') and user.get('auth_type') == 'api_key':
+                resp_obj.headers['X-API-Requests-Remaining'] = str(user.get('requests_remaining', 0))
+                resp_obj.headers['X-API-Requests-Max'] = str(user.get('max_requests', 20))
+            return response
         return decorated
     return decorator

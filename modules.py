@@ -1,58 +1,106 @@
 """
-Application Modules - 10 CRUD modules with beginner/intermediate/advanced scenarios
+Application Modules - 10 CRUD modules with deep freeze and security
+- GET/POST: Public (no auth)
+- PUT/DELETE: Require API key (tracks usage, 20-req limit)
+- Deep freeze: tracks user modifications for auto-revert
 """
 import os
 import uuid
+import json
 import requests
 import bleach
 from flask import Blueprint, request, jsonify, send_from_directory, g
 from werkzeug.utils import secure_filename
 from database import get_db
 from auth import require_auth, require_api_key, require_role, get_current_user, log_audit
+from freeze import track_modification, get_record_snapshot
 from dotenv import load_dotenv
 
 load_dotenv()
 
 modules_bp = Blueprint('modules', __name__)
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
-MAX_UPLOAD_SIZE = int(os.getenv('MAX_UPLOAD_SIZE', 5242880))
-ALLOWED_EXTENSIONS = set(os.getenv('ALLOWED_EXTENSIONS', 'txt,pdf,png,jpg,jpeg,gif,csv,json').split(','))
-OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', '')
-OPENROUTER_MODEL = os.getenv('OPENROUTER_MODEL', 'openai/gpt-3.5-turbo')
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# Security: allowed file extensions and max size
+ALLOWED_EXTENSIONS = {'txt', 'csv', 'json', 'xml', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
+MAX_FILE_SIZE = 2 * 1024 * 1024  # 2MB
+
+# Magic bytes for file type validation
+MAGIC_BYTES = {
+    'png': b'\x89PNG',
+    'jpg': b'\xff\xd8\xff',
+    'jpeg': b'\xff\xd8\xff',
+    'gif': b'GIF8',
+    'pdf': b'%PDF',
+}
+
+# Input length limits
+MAX_TITLE_LEN = 500
+MAX_CONTENT_LEN = 5000
+MAX_FIELD_LEN = 500
 
 
-def sanitize(text):
-    if text is None:
+def sanitize_str(val, max_len=MAX_FIELD_LEN):
+    """Sanitize and limit string input"""
+    if val is None:
         return None
-    return bleach.clean(str(text).strip(), tags=[], strip=True)
+    return bleach.clean(str(val).strip()[:max_len], tags=[], strip=True)
+
+
+def sanitize_content(val, max_len=MAX_CONTENT_LEN):
+    """Sanitize longer content fields"""
+    if val is None:
+        return None
+    return bleach.clean(str(val).strip()[:max_len], tags=[], strip=True)
+
+
+def get_user_context():
+    """Get user_id and api_key_id from current request context (if authenticated)"""
+    user = getattr(g, 'current_user', None)
+    if user:
+        return user.get('user_id'), user.get('api_key_id')
+    return None, None
 
 
 def allowed_file(filename):
+    """Check if file extension is allowed"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-# ============================================================
-# 1. LIBRARY SYSTEM (Public - Beginner)
-# ============================================================
+def validate_file_content(file_obj, extension):
+    """Validate file content matches its extension using magic bytes"""
+    if extension in MAGIC_BYTES:
+        header = file_obj.read(8)
+        file_obj.seek(0)
+        if not header.startswith(MAGIC_BYTES[extension]):
+            return False
+    return True
+
+
+# ==============================================================
+# 1. LIBRARY (Books) — /api/books
+# ==============================================================
+
 @modules_bp.route('/api/books', methods=['GET'])
 def get_books():
-    """Get all books - PUBLIC endpoint"""
     db = get_db()
-    genre = request.args.get('genre')
-    search = request.args.get('search')
+    search = request.args.get('search', '')
+    genre = request.args.get('genre', '')
     query = "SELECT * FROM books WHERE 1=1"
     params = []
-    if genre:
-        query += " AND genre=?"
-        params.append(sanitize(genre))
     if search:
         query += " AND (title LIKE ? OR author LIKE ?)"
-        params.extend([f'%{sanitize(search)}%', f'%{sanitize(search)}%'])
-    query += " ORDER BY id DESC"
+        params += [f'%{search}%', f'%{search}%']
+    if genre:
+        query += " AND genre = ?"
+        params.append(genre)
+    query += " ORDER BY id ASC"
     rows = db.execute(query, params).fetchall()
     db.close()
     return jsonify({'data': [dict(r) for r in rows], 'count': len(rows)})
+
 
 @modules_bp.route('/api/books/<int:book_id>', methods=['GET'])
 def get_book(book_id):
@@ -63,77 +111,104 @@ def get_book(book_id):
         return jsonify({'error': 'Book not found'}), 404
     return jsonify({'data': dict(row)})
 
+
 @modules_bp.route('/api/books', methods=['POST'])
 def create_book():
     data = request.get_json(silent=True) or {}
-    title = sanitize(data.get('title'))
-    author = sanitize(data.get('author'))
-    if not title or not author:
-        return jsonify({'error': 'Title and author are required'}), 400
+    title = sanitize_str(data.get('title'))
+    if not title:
+        return jsonify({'error': 'Title is required'}), 400
     db = get_db()
     c = db.execute(
-        "INSERT INTO books (title,author,isbn,genre,year,available) VALUES (?,?,?,?,?,?)",
-        (title, author, sanitize(data.get('isbn')), sanitize(data.get('genre')),
-         data.get('year'), data.get('available', 1))
+        "INSERT INTO books (title,author,isbn,genre,year,available,is_frozen,created_by_user) VALUES (?,?,?,?,?,?,0,?)",
+        (title, sanitize_str(data.get('author', 'Unknown')),
+         sanitize_str(data.get('isbn')), sanitize_str(data.get('genre')),
+         data.get('year'), data.get('available', 1), None)
     )
+    record_id = c.lastrowid
     db.commit()
-    book_id = c.lastrowid
-    row = db.execute("SELECT * FROM books WHERE id=?", (book_id,)).fetchone()
     db.close()
-    return jsonify({'data': dict(row), 'message': 'Book created successfully'}), 201
+    # Track for deep freeze auto-delete (2h)
+    track_modification('books', record_id, 'create')
+    return jsonify({'data': {'id': record_id, 'title': title}, 'message': 'Book created (auto-deletes in 2 hours)'}), 201
+
 
 @modules_bp.route('/api/books/<int:book_id>', methods=['PUT'])
+@require_api_key()
 def update_book(book_id):
-    data = request.get_json(silent=True) or {}
     db = get_db()
-    existing = db.execute("SELECT * FROM books WHERE id=?", (book_id,)).fetchone()
-    if not existing:
+    row = db.execute("SELECT * FROM books WHERE id=?", (book_id,)).fetchone()
+    if not row:
         db.close()
         return jsonify({'error': 'Book not found'}), 404
-    db.execute(
-        "UPDATE books SET title=?, author=?, isbn=?, genre=?, year=?, available=? WHERE id=?",
-        (sanitize(data.get('title', existing['title'])),
-         sanitize(data.get('author', existing['author'])),
-         sanitize(data.get('isbn', existing['isbn'])),
-         sanitize(data.get('genre', existing['genre'])),
-         data.get('year', existing['year']),
-         data.get('available', existing['available']),
-         book_id)
-    )
+    # Snapshot for deep freeze revert
+    snapshot = get_record_snapshot('books', book_id)
+    data = request.get_json(silent=True) or {}
+    updates = []
+    values = []
+    for col in ['title', 'author', 'isbn', 'genre']:
+        if col in data:
+            updates.append(f"{col}=?")
+            values.append(sanitize_str(data[col]))
+    for col in ['year', 'available']:
+        if col in data:
+            updates.append(f"{col}=?")
+            values.append(data[col])
+    if not updates:
+        db.close()
+        return jsonify({'error': 'No fields to update'}), 400
+    values.append(book_id)
+    db.execute(f"UPDATE books SET {','.join(updates)} WHERE id=?", values)
     db.commit()
-    row = db.execute("SELECT * FROM books WHERE id=?", (book_id,)).fetchone()
     db.close()
-    return jsonify({'data': dict(row), 'message': 'Book updated successfully'})
+    user_id, key_id = get_user_context()
+    track_modification('books', book_id, 'update', snapshot, user_id, key_id)
+    return jsonify({'message': 'Book updated (auto-reverts in 1 hour)'})
+
 
 @modules_bp.route('/api/books/<int:book_id>', methods=['DELETE'])
+@require_api_key()
 def delete_book(book_id):
     db = get_db()
-    existing = db.execute("SELECT * FROM books WHERE id=?", (book_id,)).fetchone()
-    if not existing:
+    row = db.execute("SELECT * FROM books WHERE id=?", (book_id,)).fetchone()
+    if not row:
         db.close()
         return jsonify({'error': 'Book not found'}), 404
-    db.execute("DELETE FROM books WHERE id=?", (book_id,))
-    db.commit()
-    db.close()
-    return jsonify({'message': 'Book deleted successfully'})
+    snapshot = get_record_snapshot('books', book_id)
+    is_frozen = row['is_frozen']
+    if is_frozen:
+        # Don't actually delete frozen data, just hide it
+        db.execute("DELETE FROM books WHERE id=?", (book_id,))
+        db.commit()
+        db.close()
+        user_id, key_id = get_user_context()
+        track_modification('books', book_id, 'delete', snapshot, user_id, key_id)
+        return jsonify({'message': 'Book deleted (auto-restores in 1 hour)'})
+    else:
+        db.execute("DELETE FROM books WHERE id=?", (book_id,))
+        db.commit()
+        db.close()
+        return jsonify({'message': 'Book deleted'})
 
 
-# ============================================================
-# 2. RESTAURANT MENU (Public - Beginner)
-# ============================================================
+# ==============================================================
+# 2. RESTAURANT MENU — /api/menu
+# ==============================================================
+
 @modules_bp.route('/api/menu', methods=['GET'])
 def get_menu():
     db = get_db()
-    category = request.args.get('category')
-    query = "SELECT * FROM menu_items"
+    category = request.args.get('category', '')
+    query = "SELECT * FROM menu_items WHERE 1=1"
     params = []
     if category:
-        query += " WHERE category=?"
-        params.append(sanitize(category))
-    query += " ORDER BY category, name"
+        query += " AND category = ?"
+        params.append(category)
+    query += " ORDER BY id ASC"
     rows = db.execute(query, params).fetchall()
     db.close()
     return jsonify({'data': [dict(r) for r in rows], 'count': len(rows)})
+
 
 @modules_bp.route('/api/menu/<int:item_id>', methods=['GET'])
 def get_menu_item(item_id):
@@ -144,80 +219,101 @@ def get_menu_item(item_id):
         return jsonify({'error': 'Menu item not found'}), 404
     return jsonify({'data': dict(row)})
 
+
 @modules_bp.route('/api/menu', methods=['POST'])
 def create_menu_item():
     data = request.get_json(silent=True) or {}
-    name = sanitize(data.get('name'))
+    name = sanitize_str(data.get('name'))
     price = data.get('price')
-    category = sanitize(data.get('category'))
+    category = sanitize_str(data.get('category'))
     if not name or price is None or not category:
         return jsonify({'error': 'Name, price, and category are required'}), 400
     db = get_db()
     c = db.execute(
-        "INSERT INTO menu_items (name,description,price,category,is_available) VALUES (?,?,?,?,?)",
-        (name, sanitize(data.get('description')), float(price), category,
-         data.get('is_available', 1))
+        "INSERT INTO menu_items (name,description,price,category,is_available,is_frozen,created_by_user) VALUES (?,?,?,?,?,0,?)",
+        (name, sanitize_content(data.get('description')), float(price), category,
+         data.get('is_available', 1), None)
     )
+    record_id = c.lastrowid
     db.commit()
-    row = db.execute("SELECT * FROM menu_items WHERE id=?", (c.lastrowid,)).fetchone()
     db.close()
-    return jsonify({'data': dict(row), 'message': 'Menu item created'}), 201
+    track_modification('menu_items', record_id, 'create')
+    return jsonify({'data': {'id': record_id, 'name': name}, 'message': 'Menu item created (auto-deletes in 2 hours)'}), 201
+
 
 @modules_bp.route('/api/menu/<int:item_id>', methods=['PUT'])
+@require_api_key()
 def update_menu_item(item_id):
-    data = request.get_json(silent=True) or {}
     db = get_db()
-    existing = db.execute("SELECT * FROM menu_items WHERE id=?", (item_id,)).fetchone()
-    if not existing:
+    row = db.execute("SELECT * FROM menu_items WHERE id=?", (item_id,)).fetchone()
+    if not row:
         db.close()
         return jsonify({'error': 'Menu item not found'}), 404
-    db.execute(
-        "UPDATE menu_items SET name=?,description=?,price=?,category=?,is_available=? WHERE id=?",
-        (sanitize(data.get('name', existing['name'])),
-         sanitize(data.get('description', existing['description'])),
-         float(data.get('price', existing['price'])),
-         sanitize(data.get('category', existing['category'])),
-         data.get('is_available', existing['is_available']),
-         item_id)
-    )
+    snapshot = get_record_snapshot('menu_items', item_id)
+    data = request.get_json(silent=True) or {}
+    updates, values = [], []
+    for col in ['name', 'description', 'category']:
+        if col in data:
+            updates.append(f"{col}=?")
+            values.append(sanitize_str(data[col]) if col != 'description' else sanitize_content(data[col]))
+    for col in ['price', 'is_available']:
+        if col in data:
+            updates.append(f"{col}=?")
+            values.append(data[col])
+    if not updates:
+        db.close()
+        return jsonify({'error': 'No fields to update'}), 400
+    values.append(item_id)
+    db.execute(f"UPDATE menu_items SET {','.join(updates)} WHERE id=?", values)
     db.commit()
-    row = db.execute("SELECT * FROM menu_items WHERE id=?", (item_id,)).fetchone()
     db.close()
-    return jsonify({'data': dict(row), 'message': 'Menu item updated'})
+    user_id, key_id = get_user_context()
+    track_modification('menu_items', item_id, 'update', snapshot, user_id, key_id)
+    return jsonify({'message': 'Menu item updated (auto-reverts in 1 hour)'})
+
 
 @modules_bp.route('/api/menu/<int:item_id>', methods=['DELETE'])
+@require_api_key()
 def delete_menu_item(item_id):
     db = get_db()
-    existing = db.execute("SELECT * FROM menu_items WHERE id=?", (item_id,)).fetchone()
-    if not existing:
+    row = db.execute("SELECT * FROM menu_items WHERE id=?", (item_id,)).fetchone()
+    if not row:
         db.close()
         return jsonify({'error': 'Menu item not found'}), 404
+    snapshot = get_record_snapshot('menu_items', item_id)
+    is_frozen = row['is_frozen']
     db.execute("DELETE FROM menu_items WHERE id=?", (item_id,))
     db.commit()
     db.close()
+    if is_frozen:
+        user_id, key_id = get_user_context()
+        track_modification('menu_items', item_id, 'delete', snapshot, user_id, key_id)
+        return jsonify({'message': 'Menu item deleted (auto-restores in 1 hour)'})
     return jsonify({'message': 'Menu item deleted'})
 
 
-# ============================================================
-# 3. TASK MANAGER (Public - Beginner)
-# ============================================================
+# ==============================================================
+# 3. TASK MANAGER — /api/tasks
+# ==============================================================
+
 @modules_bp.route('/api/tasks', methods=['GET'])
 def get_tasks():
     db = get_db()
-    status = request.args.get('status')
-    priority = request.args.get('priority')
+    status = request.args.get('status', '')
+    priority = request.args.get('priority', '')
     query = "SELECT * FROM tasks WHERE 1=1"
     params = []
     if status:
-        query += " AND status=?"
-        params.append(sanitize(status))
+        query += " AND status = ?"
+        params.append(status)
     if priority:
-        query += " AND priority=?"
-        params.append(sanitize(priority))
-    query += " ORDER BY CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END, id DESC"
+        query += " AND priority = ?"
+        params.append(priority)
+    query += " ORDER BY id ASC"
     rows = db.execute(query, params).fetchall()
     db.close()
     return jsonify({'data': [dict(r) for r in rows], 'count': len(rows)})
+
 
 @modules_bp.route('/api/tasks/<int:task_id>', methods=['GET'])
 def get_task(task_id):
@@ -228,76 +324,92 @@ def get_task(task_id):
         return jsonify({'error': 'Task not found'}), 404
     return jsonify({'data': dict(row)})
 
+
 @modules_bp.route('/api/tasks', methods=['POST'])
 def create_task():
     data = request.get_json(silent=True) or {}
-    title = sanitize(data.get('title'))
+    title = sanitize_str(data.get('title'))
     if not title:
         return jsonify({'error': 'Title is required'}), 400
     db = get_db()
     c = db.execute(
-        "INSERT INTO tasks (title,description,status,priority,due_date,assigned_to) VALUES (?,?,?,?,?,?)",
-        (title, sanitize(data.get('description')), sanitize(data.get('status', 'pending')),
-         sanitize(data.get('priority', 'medium')), data.get('due_date'),
-         sanitize(data.get('assigned_to')))
+        "INSERT INTO tasks (title,description,status,priority,due_date,assigned_to,is_frozen,created_by_user) VALUES (?,?,?,?,?,?,0,?)",
+        (title, sanitize_content(data.get('description')),
+         sanitize_str(data.get('status', 'pending')), sanitize_str(data.get('priority', 'medium')),
+         sanitize_str(data.get('due_date')), sanitize_str(data.get('assigned_to')), None)
     )
+    record_id = c.lastrowid
     db.commit()
-    row = db.execute("SELECT * FROM tasks WHERE id=?", (c.lastrowid,)).fetchone()
     db.close()
-    return jsonify({'data': dict(row), 'message': 'Task created'}), 201
+    track_modification('tasks', record_id, 'create')
+    return jsonify({'data': {'id': record_id, 'title': title}, 'message': 'Task created (auto-deletes in 2 hours)'}), 201
+
 
 @modules_bp.route('/api/tasks/<int:task_id>', methods=['PUT'])
+@require_api_key()
 def update_task(task_id):
-    data = request.get_json(silent=True) or {}
     db = get_db()
-    existing = db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
-    if not existing:
+    row = db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
+    if not row:
         db.close()
         return jsonify({'error': 'Task not found'}), 404
-    db.execute(
-        "UPDATE tasks SET title=?,description=?,status=?,priority=?,due_date=?,assigned_to=? WHERE id=?",
-        (sanitize(data.get('title', existing['title'])),
-         sanitize(data.get('description', existing['description'])),
-         sanitize(data.get('status', existing['status'])),
-         sanitize(data.get('priority', existing['priority'])),
-         data.get('due_date', existing['due_date']),
-         sanitize(data.get('assigned_to', existing['assigned_to'])),
-         task_id)
-    )
+    snapshot = get_record_snapshot('tasks', task_id)
+    data = request.get_json(silent=True) or {}
+    updates, values = [], []
+    for col in ['title', 'description', 'status', 'priority', 'due_date', 'assigned_to']:
+        if col in data:
+            updates.append(f"{col}=?")
+            values.append(sanitize_str(data[col]) if col != 'description' else sanitize_content(data[col]))
+    if not updates:
+        db.close()
+        return jsonify({'error': 'No fields to update'}), 400
+    values.append(task_id)
+    db.execute(f"UPDATE tasks SET {','.join(updates)} WHERE id=?", values)
     db.commit()
-    row = db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
     db.close()
-    return jsonify({'data': dict(row), 'message': 'Task updated'})
+    user_id, key_id = get_user_context()
+    track_modification('tasks', task_id, 'update', snapshot, user_id, key_id)
+    return jsonify({'message': 'Task updated (auto-reverts in 1 hour)'})
+
 
 @modules_bp.route('/api/tasks/<int:task_id>', methods=['DELETE'])
+@require_api_key()
 def delete_task(task_id):
     db = get_db()
-    existing = db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
-    if not existing:
+    row = db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
+    if not row:
         db.close()
         return jsonify({'error': 'Task not found'}), 404
+    snapshot = get_record_snapshot('tasks', task_id)
+    is_frozen = row['is_frozen']
     db.execute("DELETE FROM tasks WHERE id=?", (task_id,))
     db.commit()
     db.close()
+    if is_frozen:
+        user_id, key_id = get_user_context()
+        track_modification('tasks', task_id, 'delete', snapshot, user_id, key_id)
+        return jsonify({'message': 'Task deleted (auto-restores in 1 hour)'})
     return jsonify({'message': 'Task deleted'})
 
 
-# ============================================================
-# 4. STUDENT MANAGEMENT (Intermediate - API Key)
-# ============================================================
+# ==============================================================
+# 4. STUDENT MANAGEMENT — /api/students
+# ==============================================================
+
 @modules_bp.route('/api/students', methods=['GET'])
 def get_students():
     db = get_db()
-    major = request.args.get('major')
+    major = request.args.get('major', '')
     query = "SELECT * FROM students WHERE 1=1"
     params = []
     if major:
-        query += " AND major=?"
-        params.append(sanitize(major))
-    query += " ORDER BY name"
+        query += " AND major LIKE ?"
+        params.append(f'%{major}%')
+    query += " ORDER BY id ASC"
     rows = db.execute(query, params).fetchall()
     db.close()
     return jsonify({'data': [dict(r) for r in rows], 'count': len(rows)})
+
 
 @modules_bp.route('/api/students/<int:student_id>', methods=['GET'])
 def get_student(student_id):
@@ -308,76 +420,96 @@ def get_student(student_id):
         return jsonify({'error': 'Student not found'}), 404
     return jsonify({'data': dict(row)})
 
+
 @modules_bp.route('/api/students', methods=['POST'])
 def create_student():
     data = request.get_json(silent=True) or {}
-    name = sanitize(data.get('name'))
+    name = sanitize_str(data.get('name'))
     if not name:
         return jsonify({'error': 'Name is required'}), 400
     db = get_db()
     c = db.execute(
-        "INSERT INTO students (name,email,student_id,major,gpa,enrollment_year) VALUES (?,?,?,?,?,?)",
-        (name, sanitize(data.get('email')), sanitize(data.get('student_id')),
-         sanitize(data.get('major')), data.get('gpa'), data.get('enrollment_year'))
+        "INSERT INTO students (name,email,student_id,major,gpa,enrollment_year,is_frozen,created_by_user) VALUES (?,?,?,?,?,?,0,?)",
+        (name, sanitize_str(data.get('email')),
+         sanitize_str(data.get('student_id', f'STU{uuid.uuid4().hex[:4].upper()}')),
+         sanitize_str(data.get('major')), data.get('gpa'), data.get('enrollment_year'), None)
     )
+    record_id = c.lastrowid
     db.commit()
-    row = db.execute("SELECT * FROM students WHERE id=?", (c.lastrowid,)).fetchone()
     db.close()
-    log_audit(None, 'create_student', f'student:{c.lastrowid}')
-    return jsonify({'data': dict(row), 'message': 'Student created'}), 201
+    track_modification('students', record_id, 'create')
+    return jsonify({'data': {'id': record_id, 'name': name}, 'message': 'Student created (auto-deletes in 2 hours)'}), 201
+
 
 @modules_bp.route('/api/students/<int:student_id>', methods=['PUT'])
+@require_api_key()
 def update_student(student_id):
-    data = request.get_json(silent=True) or {}
     db = get_db()
-    existing = db.execute("SELECT * FROM students WHERE id=?", (student_id,)).fetchone()
-    if not existing:
+    row = db.execute("SELECT * FROM students WHERE id=?", (student_id,)).fetchone()
+    if not row:
         db.close()
         return jsonify({'error': 'Student not found'}), 404
-    db.execute(
-        "UPDATE students SET name=?,email=?,student_id=?,major=?,gpa=?,enrollment_year=? WHERE id=?",
-        (sanitize(data.get('name', existing['name'])),
-         sanitize(data.get('email', existing['email'])),
-         sanitize(data.get('student_id', existing['student_id'])),
-         sanitize(data.get('major', existing['major'])),
-         data.get('gpa', existing['gpa']),
-         data.get('enrollment_year', existing['enrollment_year']),
-         student_id)
-    )
+    snapshot = get_record_snapshot('students', student_id)
+    data = request.get_json(silent=True) or {}
+    updates, values = [], []
+    for col in ['name', 'email', 'student_id', 'major']:
+        if col in data:
+            updates.append(f"{col}=?")
+            values.append(sanitize_str(data[col]))
+    for col in ['gpa', 'enrollment_year']:
+        if col in data:
+            updates.append(f"{col}=?")
+            values.append(data[col])
+    if not updates:
+        db.close()
+        return jsonify({'error': 'No fields to update'}), 400
+    values.append(student_id)
+    db.execute(f"UPDATE students SET {','.join(updates)} WHERE id=?", values)
     db.commit()
-    row = db.execute("SELECT * FROM students WHERE id=?", (student_id,)).fetchone()
     db.close()
-    return jsonify({'data': dict(row), 'message': 'Student updated'})
+    user_id, key_id = get_user_context()
+    track_modification('students', student_id, 'update', snapshot, user_id, key_id)
+    return jsonify({'message': 'Student updated (auto-reverts in 1 hour)'})
+
 
 @modules_bp.route('/api/students/<int:student_id>', methods=['DELETE'])
+@require_api_key()
 def delete_student(student_id):
     db = get_db()
-    existing = db.execute("SELECT * FROM students WHERE id=?", (student_id,)).fetchone()
-    if not existing:
+    row = db.execute("SELECT * FROM students WHERE id=?", (student_id,)).fetchone()
+    if not row:
         db.close()
         return jsonify({'error': 'Student not found'}), 404
+    snapshot = get_record_snapshot('students', student_id)
+    is_frozen = row['is_frozen']
     db.execute("DELETE FROM students WHERE id=?", (student_id,))
     db.commit()
     db.close()
+    if is_frozen:
+        user_id, key_id = get_user_context()
+        track_modification('students', student_id, 'delete', snapshot, user_id, key_id)
+        return jsonify({'message': 'Student deleted (auto-restores in 1 hour)'})
     return jsonify({'message': 'Student deleted'})
 
 
-# ============================================================
-# 5. NOTES SYSTEM (Public - Beginner)
-# ============================================================
+# ==============================================================
+# 5. NOTES — /api/notes
+# ==============================================================
+
 @modules_bp.route('/api/notes', methods=['GET'])
 def get_notes():
     db = get_db()
-    category = request.args.get('category')
+    category = request.args.get('category', '')
     query = "SELECT * FROM notes WHERE 1=1"
     params = []
     if category:
-        query += " AND category=?"
-        params.append(sanitize(category))
-    query += " ORDER BY is_pinned DESC, id DESC"
+        query += " AND category = ?"
+        params.append(category)
+    query += " ORDER BY is_pinned DESC, id ASC"
     rows = db.execute(query, params).fetchall()
     db.close()
     return jsonify({'data': [dict(r) for r in rows], 'count': len(rows)})
+
 
 @modules_bp.route('/api/notes/<int:note_id>', methods=['GET'])
 def get_note(note_id):
@@ -388,99 +520,140 @@ def get_note(note_id):
         return jsonify({'error': 'Note not found'}), 404
     return jsonify({'data': dict(row)})
 
+
 @modules_bp.route('/api/notes', methods=['POST'])
 def create_note():
     data = request.get_json(silent=True) or {}
-    title = sanitize(data.get('title'))
+    title = sanitize_str(data.get('title'))
     if not title:
         return jsonify({'error': 'Title is required'}), 400
     db = get_db()
     c = db.execute(
-        "INSERT INTO notes (title,content,category,is_pinned) VALUES (?,?,?,?)",
-        (title, sanitize(data.get('content')), sanitize(data.get('category')),
-         data.get('is_pinned', 0))
+        "INSERT INTO notes (title,content,category,is_pinned,is_frozen,created_by_user) VALUES (?,?,?,?,0,?)",
+        (title, sanitize_content(data.get('content')),
+         sanitize_str(data.get('category')), data.get('is_pinned', 0), None)
     )
+    record_id = c.lastrowid
     db.commit()
-    row = db.execute("SELECT * FROM notes WHERE id=?", (c.lastrowid,)).fetchone()
     db.close()
-    return jsonify({'data': dict(row), 'message': 'Note created'}), 201
+    track_modification('notes', record_id, 'create')
+    return jsonify({'data': {'id': record_id, 'title': title}, 'message': 'Note created (auto-deletes in 2 hours)'}), 201
+
 
 @modules_bp.route('/api/notes/<int:note_id>', methods=['PUT'])
+@require_api_key()
 def update_note(note_id):
-    data = request.get_json(silent=True) or {}
     db = get_db()
-    existing = db.execute("SELECT * FROM notes WHERE id=?", (note_id,)).fetchone()
-    if not existing:
+    row = db.execute("SELECT * FROM notes WHERE id=?", (note_id,)).fetchone()
+    if not row:
         db.close()
         return jsonify({'error': 'Note not found'}), 404
-    db.execute(
-        "UPDATE notes SET title=?,content=?,category=?,is_pinned=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
-        (sanitize(data.get('title', existing['title'])),
-         sanitize(data.get('content', existing['content'])),
-         sanitize(data.get('category', existing['category'])),
-         data.get('is_pinned', existing['is_pinned']),
-         note_id)
-    )
+    snapshot = get_record_snapshot('notes', note_id)
+    data = request.get_json(silent=True) or {}
+    updates, values = [], []
+    for col in ['title', 'category']:
+        if col in data:
+            updates.append(f"{col}=?")
+            values.append(sanitize_str(data[col]))
+    if 'content' in data:
+        updates.append("content=?")
+        values.append(sanitize_content(data['content']))
+    if 'is_pinned' in data:
+        updates.append("is_pinned=?")
+        values.append(data['is_pinned'])
+    updates.append("updated_at=CURRENT_TIMESTAMP")
+    if len(updates) <= 1:
+        db.close()
+        return jsonify({'error': 'No fields to update'}), 400
+    values.append(note_id)
+    db.execute(f"UPDATE notes SET {','.join(updates)} WHERE id=?", values)
     db.commit()
-    row = db.execute("SELECT * FROM notes WHERE id=?", (note_id,)).fetchone()
     db.close()
-    return jsonify({'data': dict(row), 'message': 'Note updated'})
+    user_id, key_id = get_user_context()
+    track_modification('notes', note_id, 'update', snapshot, user_id, key_id)
+    return jsonify({'message': 'Note updated (auto-reverts in 1 hour)'})
+
 
 @modules_bp.route('/api/notes/<int:note_id>', methods=['DELETE'])
+@require_api_key()
 def delete_note(note_id):
     db = get_db()
-    existing = db.execute("SELECT * FROM notes WHERE id=?", (note_id,)).fetchone()
-    if not existing:
+    row = db.execute("SELECT * FROM notes WHERE id=?", (note_id,)).fetchone()
+    if not row:
         db.close()
         return jsonify({'error': 'Note not found'}), 404
+    snapshot = get_record_snapshot('notes', note_id)
+    is_frozen = row['is_frozen']
     db.execute("DELETE FROM notes WHERE id=?", (note_id,))
     db.commit()
     db.close()
+    if is_frozen:
+        user_id, key_id = get_user_context()
+        track_modification('notes', note_id, 'delete', snapshot, user_id, key_id)
+        return jsonify({'message': 'Note deleted (auto-restores in 1 hour)'})
     return jsonify({'message': 'Note deleted'})
 
 
-# ============================================================
-# 6. FILE UPLOAD/DOWNLOAD PLAYGROUND (Intermediate - API Key)
-# ============================================================
+# ==============================================================
+# 6. FILE MANAGER — /api/files (SECURITY HARDENED)
+# ==============================================================
+
 @modules_bp.route('/api/files', methods=['GET'])
 def list_files():
     db = get_db()
-    rows = db.execute("SELECT * FROM files ORDER BY id DESC").fetchall()
+    rows = db.execute("SELECT * FROM files ORDER BY id ASC").fetchall()
     db.close()
     return jsonify({'data': [dict(r) for r in rows], 'count': len(rows)})
+
 
 @modules_bp.route('/api/files/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
-    file = request.files['file']
-    if file.filename == '':
+    f = request.files['file']
+    if not f.filename:
         return jsonify({'error': 'No file selected'}), 400
-    if not allowed_file(file.filename):
-        return jsonify({'error': f'File type not allowed. Allowed: {", ".join(ALLOWED_EXTENSIONS)}'}), 400
 
-    file.seek(0, 2)
-    size = file.tell()
-    file.seek(0)
-    if size > MAX_UPLOAD_SIZE:
-        return jsonify({'error': f'File too large. Max size: {MAX_UPLOAD_SIZE // 1048576}MB'}), 400
+    # Security: check extension
+    if not allowed_file(f.filename):
+        return jsonify({
+            'error': 'File type not allowed',
+            'allowed': list(ALLOWED_EXTENSIONS),
+            'message': 'Only safe file types are accepted for security reasons'
+        }), 400
 
-    original_name = secure_filename(file.filename)
-    unique_name = f"{uuid.uuid4().hex}_{original_name}"
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-    file.save(os.path.join(UPLOAD_FOLDER, unique_name))
+    # Security: check file size
+    f.seek(0, 2)
+    size = f.tell()
+    f.seek(0)
+    if size > MAX_FILE_SIZE:
+        return jsonify({'error': f'File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)}MB'}), 413
 
-    ext = original_name.rsplit('.', 1)[1].lower() if '.' in original_name else 'unknown'
+    # Security: validate magic bytes
+    ext = f.filename.rsplit('.', 1)[1].lower()
+    if not validate_file_content(f, ext):
+        return jsonify({'error': 'File content does not match its extension. Possible disguised file.'}), 400
+
+    # Sanitize filename
+    original = secure_filename(f.filename)[:100]
+    unique = f"{uuid.uuid4().hex}_{original}"
+    filepath = os.path.join(UPLOAD_DIR, unique)
+    f.save(filepath)
+
     db = get_db()
     c = db.execute(
-        "INSERT INTO files (filename,original_name,file_type,file_size,uploaded_by) VALUES (?,?,?,?,?)",
-        (unique_name, original_name, ext, size, 'anonymous')
+        "INSERT INTO files (filename,original_name,file_type,file_size,uploaded_by,is_frozen,created_by_user) VALUES (?,?,?,?,?,0,?)",
+        (unique, original, ext, size, 'anonymous', None)
     )
+    record_id = c.lastrowid
     db.commit()
-    row = db.execute("SELECT * FROM files WHERE id=?", (c.lastrowid,)).fetchone()
     db.close()
-    log_audit(None, 'upload_file', f'file:{unique_name}')
-    return jsonify({'data': dict(row), 'message': 'File uploaded successfully'}), 201
+    track_modification('files', record_id, 'create')
+    return jsonify({
+        'data': {'id': record_id, 'filename': original, 'size': size},
+        'message': 'File uploaded (auto-deletes in 2 hours)'
+    }), 201
+
 
 @modules_bp.route('/api/files/download/<int:file_id>', methods=['GET'])
 def download_file(file_id):
@@ -489,20 +662,18 @@ def download_file(file_id):
     db.close()
     if not row:
         return jsonify({'error': 'File not found'}), 404
-    filepath = os.path.join(UPLOAD_FOLDER, row['filename'])
-    if not os.path.exists(filepath):
-        return jsonify({'error': 'File not found on disk'}), 404
-    return send_from_directory(UPLOAD_FOLDER, row['filename'],
-                               download_name=row['original_name'], as_attachment=True)
+    return send_from_directory(UPLOAD_DIR, row['filename'], as_attachment=True, download_name=row['original_name'])
+
 
 @modules_bp.route('/api/files/<int:file_id>', methods=['DELETE'])
+@require_api_key()
 def delete_file(file_id):
     db = get_db()
     row = db.execute("SELECT * FROM files WHERE id=?", (file_id,)).fetchone()
     if not row:
         db.close()
         return jsonify({'error': 'File not found'}), 404
-    filepath = os.path.join(UPLOAD_FOLDER, row['filename'])
+    filepath = os.path.join(UPLOAD_DIR, row['filename'])
     if os.path.exists(filepath):
         os.remove(filepath)
     db.execute("DELETE FROM files WHERE id=?", (file_id,))
@@ -511,25 +682,27 @@ def delete_file(file_id):
     return jsonify({'message': 'File deleted'})
 
 
-# ============================================================
-# 7. BLOG SYSTEM (Public Read, Intermediate Write)
-# ============================================================
+# ==============================================================
+# 7. BLOG — /api/blog
+# ==============================================================
+
 @modules_bp.route('/api/blog', methods=['GET'])
-def get_blog_posts():
+def get_posts():
     db = get_db()
-    tag = request.args.get('tag')
-    query = "SELECT * FROM blog_posts WHERE is_published=1"
+    tag = request.args.get('tag', '')
+    query = "SELECT * FROM blog_posts WHERE 1=1"
     params = []
     if tag:
         query += " AND tags LIKE ?"
-        params.append(f'%{sanitize(tag)}%')
-    query += " ORDER BY id DESC"
+        params.append(f'%{tag}%')
+    query += " ORDER BY id ASC"
     rows = db.execute(query, params).fetchall()
     db.close()
     return jsonify({'data': [dict(r) for r in rows], 'count': len(rows)})
 
+
 @modules_bp.route('/api/blog/<int:post_id>', methods=['GET'])
-def get_blog_post(post_id):
+def get_post(post_id):
     db = get_db()
     row = db.execute("SELECT * FROM blog_posts WHERE id=?", (post_id,)).fetchone()
     db.close()
@@ -537,81 +710,106 @@ def get_blog_post(post_id):
         return jsonify({'error': 'Post not found'}), 404
     return jsonify({'data': dict(row)})
 
+
 @modules_bp.route('/api/blog', methods=['POST'])
-def create_blog_post():
+def create_post():
     data = request.get_json(silent=True) or {}
-    title = sanitize(data.get('title'))
-    content = sanitize(data.get('content'))
+    title = sanitize_str(data.get('title'))
+    content = sanitize_content(data.get('content'))
     if not title or not content:
         return jsonify({'error': 'Title and content are required'}), 400
     db = get_db()
     c = db.execute(
-        "INSERT INTO blog_posts (title,content,author,tags,is_published) VALUES (?,?,?,?,?)",
-        (title, content, 'anonymous',
-         sanitize(data.get('tags')), data.get('is_published', 1))
+        "INSERT INTO blog_posts (title,content,author,tags,is_published,is_frozen,created_by_user) VALUES (?,?,?,?,?,0,?)",
+        (title, content, sanitize_str(data.get('author', 'Anonymous')),
+         sanitize_str(data.get('tags')), data.get('is_published', 1), None)
     )
+    record_id = c.lastrowid
     db.commit()
-    row = db.execute("SELECT * FROM blog_posts WHERE id=?", (c.lastrowid,)).fetchone()
     db.close()
-    return jsonify({'data': dict(row), 'message': 'Blog post created'}), 201
+    track_modification('blog_posts', record_id, 'create')
+    return jsonify({'data': {'id': record_id, 'title': title}, 'message': 'Blog post created (auto-deletes in 2 hours)'}), 201
+
 
 @modules_bp.route('/api/blog/<int:post_id>', methods=['PUT'])
-def update_blog_post(post_id):
-    data = request.get_json(silent=True) or {}
+@require_api_key()
+def update_post(post_id):
     db = get_db()
-    existing = db.execute("SELECT * FROM blog_posts WHERE id=?", (post_id,)).fetchone()
-    if not existing:
+    row = db.execute("SELECT * FROM blog_posts WHERE id=?", (post_id,)).fetchone()
+    if not row:
         db.close()
         return jsonify({'error': 'Post not found'}), 404
-    db.execute(
-        "UPDATE blog_posts SET title=?,content=?,tags=?,is_published=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
-        (sanitize(data.get('title', existing['title'])),
-         sanitize(data.get('content', existing['content'])),
-         sanitize(data.get('tags', existing['tags'])),
-         data.get('is_published', existing['is_published']),
-         post_id)
-    )
+    snapshot = get_record_snapshot('blog_posts', post_id)
+    data = request.get_json(silent=True) or {}
+    updates, values = [], []
+    for col in ['title', 'author', 'tags']:
+        if col in data:
+            updates.append(f"{col}=?")
+            values.append(sanitize_str(data[col]))
+    if 'content' in data:
+        updates.append("content=?")
+        values.append(sanitize_content(data['content']))
+    if 'is_published' in data:
+        updates.append("is_published=?")
+        values.append(data['is_published'])
+    updates.append("updated_at=CURRENT_TIMESTAMP")
+    if len(updates) <= 1:
+        db.close()
+        return jsonify({'error': 'No fields to update'}), 400
+    values.append(post_id)
+    db.execute(f"UPDATE blog_posts SET {','.join(updates)} WHERE id=?", values)
     db.commit()
-    row = db.execute("SELECT * FROM blog_posts WHERE id=?", (post_id,)).fetchone()
     db.close()
-    return jsonify({'data': dict(row), 'message': 'Post updated'})
+    user_id, key_id = get_user_context()
+    track_modification('blog_posts', post_id, 'update', snapshot, user_id, key_id)
+    return jsonify({'message': 'Post updated (auto-reverts in 1 hour)'})
+
 
 @modules_bp.route('/api/blog/<int:post_id>', methods=['DELETE'])
-def delete_blog_post(post_id):
+@require_api_key()
+def delete_post(post_id):
     db = get_db()
-    existing = db.execute("SELECT * FROM blog_posts WHERE id=?", (post_id,)).fetchone()
-    if not existing:
+    row = db.execute("SELECT * FROM blog_posts WHERE id=?", (post_id,)).fetchone()
+    if not row:
         db.close()
         return jsonify({'error': 'Post not found'}), 404
+    snapshot = get_record_snapshot('blog_posts', post_id)
+    is_frozen = row['is_frozen']
     db.execute("DELETE FROM blog_posts WHERE id=?", (post_id,))
     db.commit()
     db.close()
+    if is_frozen:
+        user_id, key_id = get_user_context()
+        track_modification('blog_posts', post_id, 'delete', snapshot, user_id, key_id)
+        return jsonify({'message': 'Post deleted (auto-restores in 1 hour)'})
     return jsonify({'message': 'Post deleted'})
 
 
-# ============================================================
-# 8. INVENTORY SYSTEM (Intermediate - API Key)
-# ============================================================
+# ==============================================================
+# 8. INVENTORY — /api/inventory
+# ==============================================================
+
 @modules_bp.route('/api/inventory', methods=['GET'])
 def get_inventory():
     db = get_db()
-    category = request.args.get('category')
-    warehouse = request.args.get('warehouse')
-    low_stock = request.args.get('low_stock')
+    low_stock = request.args.get('low_stock', '')
+    category = request.args.get('category', '')
+    warehouse = request.args.get('warehouse', '')
     query = "SELECT * FROM inventory WHERE 1=1"
     params = []
-    if category:
-        query += " AND category=?"
-        params.append(sanitize(category))
-    if warehouse:
-        query += " AND warehouse=?"
-        params.append(sanitize(warehouse))
     if low_stock:
         query += " AND quantity < 10"
-    query += " ORDER BY name"
+    if category:
+        query += " AND category = ?"
+        params.append(category)
+    if warehouse:
+        query += " AND warehouse = ?"
+        params.append(warehouse)
+    query += " ORDER BY id ASC"
     rows = db.execute(query, params).fetchall()
     db.close()
     return jsonify({'data': [dict(r) for r in rows], 'count': len(rows)})
+
 
 @modules_bp.route('/api/inventory/<int:item_id>', methods=['GET'])
 def get_inventory_item(item_id):
@@ -619,396 +817,357 @@ def get_inventory_item(item_id):
     row = db.execute("SELECT * FROM inventory WHERE id=?", (item_id,)).fetchone()
     db.close()
     if not row:
-        return jsonify({'error': 'Item not found'}), 404
+        return jsonify({'error': 'Inventory item not found'}), 404
     return jsonify({'data': dict(row)})
+
 
 @modules_bp.route('/api/inventory', methods=['POST'])
 def create_inventory_item():
     data = request.get_json(silent=True) or {}
-    name = sanitize(data.get('name'))
+    name = sanitize_str(data.get('name'))
     if not name:
         return jsonify({'error': 'Name is required'}), 400
     db = get_db()
     c = db.execute(
-        "INSERT INTO inventory (name,sku,quantity,price,category,warehouse) VALUES (?,?,?,?,?,?)",
-        (name, sanitize(data.get('sku')), data.get('quantity', 0),
-         data.get('price'), sanitize(data.get('category')),
-         sanitize(data.get('warehouse')))
+        "INSERT INTO inventory (name,sku,quantity,price,category,warehouse,is_frozen,created_by_user) VALUES (?,?,?,?,?,?,0,?)",
+        (name, sanitize_str(data.get('sku', f'SKU-{uuid.uuid4().hex[:6].upper()}')),
+         data.get('quantity', 0), data.get('price', 0),
+         sanitize_str(data.get('category')), sanitize_str(data.get('warehouse')), None)
     )
+    record_id = c.lastrowid
     db.commit()
-    row = db.execute("SELECT * FROM inventory WHERE id=?", (c.lastrowid,)).fetchone()
     db.close()
-    return jsonify({'data': dict(row), 'message': 'Item created'}), 201
+    track_modification('inventory', record_id, 'create')
+    return jsonify({'data': {'id': record_id, 'name': name}, 'message': 'Inventory item created (auto-deletes in 2 hours)'}), 201
+
 
 @modules_bp.route('/api/inventory/<int:item_id>', methods=['PUT'])
+@require_api_key()
 def update_inventory_item(item_id):
-    data = request.get_json(silent=True) or {}
     db = get_db()
-    existing = db.execute("SELECT * FROM inventory WHERE id=?", (item_id,)).fetchone()
-    if not existing:
-        db.close()
-        return jsonify({'error': 'Item not found'}), 404
-    db.execute(
-        "UPDATE inventory SET name=?,sku=?,quantity=?,price=?,category=?,warehouse=? WHERE id=?",
-        (sanitize(data.get('name', existing['name'])),
-         sanitize(data.get('sku', existing['sku'])),
-         data.get('quantity', existing['quantity']),
-         data.get('price', existing['price']),
-         sanitize(data.get('category', existing['category'])),
-         sanitize(data.get('warehouse', existing['warehouse'])),
-         item_id)
-    )
-    db.commit()
     row = db.execute("SELECT * FROM inventory WHERE id=?", (item_id,)).fetchone()
+    if not row:
+        db.close()
+        return jsonify({'error': 'Inventory item not found'}), 404
+    snapshot = get_record_snapshot('inventory', item_id)
+    data = request.get_json(silent=True) or {}
+    updates, values = [], []
+    for col in ['name', 'sku', 'category', 'warehouse']:
+        if col in data:
+            updates.append(f"{col}=?")
+            values.append(sanitize_str(data[col]))
+    for col in ['quantity', 'price']:
+        if col in data:
+            updates.append(f"{col}=?")
+            values.append(data[col])
+    if not updates:
+        db.close()
+        return jsonify({'error': 'No fields to update'}), 400
+    values.append(item_id)
+    db.execute(f"UPDATE inventory SET {','.join(updates)} WHERE id=?", values)
+    db.commit()
     db.close()
-    return jsonify({'data': dict(row), 'message': 'Item updated'})
+    user_id, key_id = get_user_context()
+    track_modification('inventory', item_id, 'update', snapshot, user_id, key_id)
+    return jsonify({'message': 'Inventory item updated (auto-reverts in 1 hour)'})
+
 
 @modules_bp.route('/api/inventory/<int:item_id>', methods=['DELETE'])
+@require_api_key()
 def delete_inventory_item(item_id):
     db = get_db()
-    existing = db.execute("SELECT * FROM inventory WHERE id=?", (item_id,)).fetchone()
-    if not existing:
+    row = db.execute("SELECT * FROM inventory WHERE id=?", (item_id,)).fetchone()
+    if not row:
         db.close()
-        return jsonify({'error': 'Item not found'}), 404
+        return jsonify({'error': 'Inventory item not found'}), 404
+    snapshot = get_record_snapshot('inventory', item_id)
+    is_frozen = row['is_frozen']
     db.execute("DELETE FROM inventory WHERE id=?", (item_id,))
     db.commit()
     db.close()
-    return jsonify({'message': 'Item deleted'})
+    if is_frozen:
+        user_id, key_id = get_user_context()
+        track_modification('inventory', item_id, 'delete', snapshot, user_id, key_id)
+        return jsonify({'message': 'Inventory item deleted (auto-restores in 1 hour)'})
+    return jsonify({'message': 'Inventory item deleted'})
 
 
-# ============================================================
-# 9. MOCK WEATHER API (Public - Beginner)
-# ============================================================
-MOCK_WEATHER = {
-    'london': {'city': 'London', 'country': 'UK', 'temp_c': 12, 'temp_f': 54, 'condition': 'Cloudy', 'humidity': 78, 'wind_kph': 15},
-    'new york': {'city': 'New York', 'country': 'US', 'temp_c': 8, 'temp_f': 46, 'condition': 'Sunny', 'humidity': 45, 'wind_kph': 10},
-    'tokyo': {'city': 'Tokyo', 'country': 'JP', 'temp_c': 18, 'temp_f': 64, 'condition': 'Partly Cloudy', 'humidity': 60, 'wind_kph': 8},
-    'paris': {'city': 'Paris', 'country': 'FR', 'temp_c': 14, 'temp_f': 57, 'condition': 'Rainy', 'humidity': 82, 'wind_kph': 20},
-    'dubai': {'city': 'Dubai', 'country': 'AE', 'temp_c': 35, 'temp_f': 95, 'condition': 'Sunny', 'humidity': 30, 'wind_kph': 12},
-    'berlin': {'city': 'Berlin', 'country': 'DE', 'temp_c': 10, 'temp_f': 50, 'condition': 'Overcast', 'humidity': 70, 'wind_kph': 18},
-    'sydney': {'city': 'Sydney', 'country': 'AU', 'temp_c': 25, 'temp_f': 77, 'condition': 'Sunny', 'humidity': 55, 'wind_kph': 14},
-    'cairo': {'city': 'Cairo', 'country': 'EG', 'temp_c': 28, 'temp_f': 82, 'condition': 'Clear', 'humidity': 25, 'wind_kph': 6},
-    'moscow': {'city': 'Moscow', 'country': 'RU', 'temp_c': -5, 'temp_f': 23, 'condition': 'Snowy', 'humidity': 85, 'wind_kph': 22},
-    'baghdad': {'city': 'Baghdad', 'country': 'IQ', 'temp_c': 32, 'temp_f': 90, 'condition': 'Hot', 'humidity': 20, 'wind_kph': 8},
+# ==============================================================
+# 9. WEATHER (Mock API — no CRUD, read-only)
+# ==============================================================
+
+WEATHER_DATA = {
+    'london': {'city': 'London', 'country': 'UK', 'temp': 12, 'humidity': 78, 'condition': 'Cloudy', 'wind_speed': 15, 'uv_index': 2},
+    'new york': {'city': 'New York', 'country': 'USA', 'temp': 18, 'humidity': 65, 'condition': 'Sunny', 'wind_speed': 10, 'uv_index': 5},
+    'tokyo': {'city': 'Tokyo', 'country': 'Japan', 'temp': 22, 'humidity': 70, 'condition': 'Partly Cloudy', 'wind_speed': 8, 'uv_index': 4},
+    'dubai': {'city': 'Dubai', 'country': 'UAE', 'temp': 38, 'humidity': 45, 'condition': 'Sunny', 'wind_speed': 12, 'uv_index': 9},
+    'paris': {'city': 'Paris', 'country': 'France', 'temp': 15, 'humidity': 72, 'condition': 'Rainy', 'wind_speed': 18, 'uv_index': 3},
+    'sydney': {'city': 'Sydney', 'country': 'Australia', 'temp': 25, 'humidity': 60, 'condition': 'Sunny', 'wind_speed': 14, 'uv_index': 7},
+    'moscow': {'city': 'Moscow', 'country': 'Russia', 'temp': -5, 'humidity': 85, 'condition': 'Snowy', 'wind_speed': 20, 'uv_index': 1},
+    'cairo': {'city': 'Cairo', 'country': 'Egypt', 'temp': 32, 'humidity': 30, 'condition': 'Sunny', 'wind_speed': 8, 'uv_index': 8},
+    'berlin': {'city': 'Berlin', 'country': 'Germany', 'temp': 10, 'humidity': 75, 'condition': 'Overcast', 'wind_speed': 16, 'uv_index': 2},
+    'singapore': {'city': 'Singapore', 'country': 'Singapore', 'temp': 30, 'humidity': 88, 'condition': 'Humid', 'wind_speed': 6, 'uv_index': 6},
 }
+
 
 @modules_bp.route('/api/weather', methods=['GET'])
 def get_weather():
-    """Get weather for a city"""
     city = request.args.get('city', '').lower().strip()
-    if not city:
-        return jsonify({'data': list(MOCK_WEATHER.values()), 'message': 'All available cities'})
-    weather = MOCK_WEATHER.get(city)
-    if not weather:
-        return jsonify({'error': f'City "{city}" not found', 'available_cities': list(MOCK_WEATHER.keys())}), 404
-    return jsonify({'data': weather})
+    if city:
+        data = WEATHER_DATA.get(city)
+        if not data:
+            return jsonify({'error': f'City not found. Available: {", ".join(WEATHER_DATA.keys())}'}), 404
+        return jsonify({'data': data})
+    return jsonify({
+        'data': list(WEATHER_DATA.values()),
+        'available_cities': list(WEATHER_DATA.keys()),
+        'count': len(WEATHER_DATA)
+    })
+
 
 @modules_bp.route('/api/weather/compare', methods=['GET'])
 def compare_weather():
-    """Compare weather between two cities"""
-    city1 = request.args.get('city1', '').lower().strip()
-    city2 = request.args.get('city2', '').lower().strip()
-    if not city1 or not city2:
-        return jsonify({'error': 'Both city1 and city2 parameters are required'}), 400
-    w1 = MOCK_WEATHER.get(city1)
-    w2 = MOCK_WEATHER.get(city2)
-    if not w1 or not w2:
-        return jsonify({'error': 'One or both cities not found'}), 404
+    c1 = request.args.get('city1', '').lower().strip()
+    c2 = request.args.get('city2', '').lower().strip()
+    if not c1 or not c2:
+        return jsonify({'error': 'Provide city1 and city2 query parameters'}), 400
+    d1 = WEATHER_DATA.get(c1)
+    d2 = WEATHER_DATA.get(c2)
+    if not d1 or not d2:
+        return jsonify({'error': f'City not found. Available: {", ".join(WEATHER_DATA.keys())}'}), 404
     return jsonify({
-        'data': {
-            'city1': w1,
-            'city2': w2,
-            'temperature_difference_c': abs(w1['temp_c'] - w2['temp_c']),
-            'warmer_city': w1['city'] if w1['temp_c'] > w2['temp_c'] else w2['city']
+        'comparison': {
+            'city1': d1, 'city2': d2,
+            'temp_diff': abs(d1['temp'] - d2['temp']),
+            'warmer': d1['city'] if d1['temp'] > d2['temp'] else d2['city']
         }
     })
 
 
-# ============================================================
-# 10. AI ASSISTANT (Advanced - Login Required)
-# ============================================================
+# ==============================================================
+# 10. AI ASSISTANT (OpenRouter) — /api/ai/*
+# ==============================================================
+
+OPENROUTER_KEY = os.getenv('OPENROUTER_API_KEY', '')
+AI_MODEL = os.getenv('AI_MODEL', 'openai/gpt-3.5-turbo')
+AI_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions'
+
+
+def call_ai(messages, max_tokens=500):
+    if not OPENROUTER_KEY:
+        return None, 'AI service not configured (no API key)'
+    try:
+        resp = requests.post(AI_BASE_URL, json={
+            'model': AI_MODEL,
+            'messages': messages,
+            'max_tokens': max_tokens
+        }, headers={
+            'Authorization': f'Bearer {OPENROUTER_KEY}',
+            'Content-Type': 'application/json'
+        }, timeout=30)
+        data = resp.json()
+        if 'choices' in data and data['choices']:
+            return data['choices'][0]['message']['content'], None
+        return None, data.get('error', {}).get('message', 'AI request failed')
+    except Exception as e:
+        return None, str(e)
+
+
 @modules_bp.route('/api/ai/generate', methods=['POST'])
 def ai_generate():
-    """Generate text using OpenRouter AI"""
     data = request.get_json(silent=True) or {}
-    prompt = sanitize(data.get('prompt', ''))
-    if not prompt or len(prompt) < 3:
-        return jsonify({'error': 'Prompt is required (min 3 characters)'}), 400
-    if len(prompt) > 2000:
-        return jsonify({'error': 'Prompt too long (max 2000 characters)'}), 400
+    prompt = sanitize_content(data.get('prompt'))
+    if not prompt:
+        return jsonify({'error': 'Prompt is required'}), 400
+    result, error = call_ai([
+        {'role': 'system', 'content': 'You are a helpful AI assistant. Generate clear, concise content.'},
+        {'role': 'user', 'content': prompt}
+    ], data.get('max_tokens', 500))
+    if error:
+        return jsonify({'error': error}), 503
+    return jsonify({'data': {'generated_text': result, 'model': AI_MODEL}})
 
-    if not OPENROUTER_API_KEY or OPENROUTER_API_KEY == 'your_openrouter_api_key_here':
-        return jsonify({'error': 'AI service not configured', 'message': 'OpenRouter API key not set'}), 503
-
-    try:
-        response = requests.post(
-            'https://openrouter.ai/api/v1/chat/completions',
-            headers={
-                'Authorization': f'Bearer {OPENROUTER_API_KEY}',
-                'Content-Type': 'application/json',
-            },
-            json={
-                'model': OPENROUTER_MODEL,
-                'messages': [
-                    {'role': 'system', 'content': 'You are a helpful educational assistant. Keep responses concise and appropriate.'},
-                    {'role': 'user', 'content': prompt}
-                ],
-                'max_tokens': 500,
-                'temperature': 0.7
-            },
-            timeout=30
-        )
-        result = response.json()
-        content = result.get('choices', [{}])[0].get('message', {}).get('content', 'No response')
-        log_audit(None, 'ai_generate', 'ai', prompt[:100])
-        return jsonify({'data': {'response': content, 'model': OPENROUTER_MODEL}})
-    except requests.Timeout:
-        return jsonify({'error': 'AI service timeout'}), 504
-    except Exception as e:
-        return jsonify({'error': 'AI service error', 'details': str(e)}), 500
 
 @modules_bp.route('/api/ai/summarize', methods=['POST'])
 def ai_summarize():
-    """Summarize text using AI"""
     data = request.get_json(silent=True) or {}
-    text = sanitize(data.get('text', ''))
-    if not text or len(text) < 20:
-        return jsonify({'error': 'Text to summarize is required (min 20 characters)'}), 400
-    if len(text) > 5000:
-        return jsonify({'error': 'Text too long (max 5000 characters)'}), 400
+    text = sanitize_content(data.get('text'))
+    if not text:
+        return jsonify({'error': 'Text is required'}), 400
+    result, error = call_ai([
+        {'role': 'system', 'content': 'Summarize the following text concisely.'},
+        {'role': 'user', 'content': text}
+    ])
+    if error:
+        return jsonify({'error': error}), 503
+    return jsonify({'data': {'summary': result, 'original_length': len(text), 'model': AI_MODEL}})
 
-    if not OPENROUTER_API_KEY or OPENROUTER_API_KEY == 'your_openrouter_api_key_here':
-        return jsonify({'error': 'AI service not configured'}), 503
-
-    try:
-        response = requests.post(
-            'https://openrouter.ai/api/v1/chat/completions',
-            headers={
-                'Authorization': f'Bearer {OPENROUTER_API_KEY}',
-                'Content-Type': 'application/json',
-            },
-            json={
-                'model': OPENROUTER_MODEL,
-                'messages': [
-                    {'role': 'system', 'content': 'Summarize the following text concisely. Provide key points.'},
-                    {'role': 'user', 'content': text}
-                ],
-                'max_tokens': 300,
-                'temperature': 0.3
-            },
-            timeout=30
-        )
-        result = response.json()
-        content = result.get('choices', [{}])[0].get('message', {}).get('content', 'No summary')
-        log_audit(None, 'ai_summarize', 'ai')
-        return jsonify({'data': {'summary': content, 'original_length': len(text)}})
-    except Exception as e:
-        return jsonify({'error': 'AI service error', 'details': str(e)}), 500
 
 @modules_bp.route('/api/ai/classify', methods=['POST'])
 def ai_classify():
-    """Classify text into categories"""
     data = request.get_json(silent=True) or {}
-    text = sanitize(data.get('text', ''))
-    categories = data.get('categories', [])
-    if not text:
-        return jsonify({'error': 'Text is required'}), 400
-    if not categories:
-        categories = ['Technology', 'Science', 'Business', 'Health', 'Education', 'Sports', 'Entertainment']
+    text = sanitize_content(data.get('text'))
+    cats = data.get('categories', [])
+    if not text or not cats:
+        return jsonify({'error': 'Text and categories are required'}), 400
+    result, error = call_ai([
+        {'role': 'system', 'content': f'Classify the text into one of: {", ".join(cats)}. Respond with only the category name.'},
+        {'role': 'user', 'content': text}
+    ])
+    if error:
+        return jsonify({'error': error}), 503
+    return jsonify({'data': {'classification': result, 'categories': cats, 'model': AI_MODEL}})
 
-    if not OPENROUTER_API_KEY or OPENROUTER_API_KEY == 'your_openrouter_api_key_here':
-        return jsonify({'error': 'AI service not configured'}), 503
-
-    try:
-        response = requests.post(
-            'https://openrouter.ai/api/v1/chat/completions',
-            headers={
-                'Authorization': f'Bearer {OPENROUTER_API_KEY}',
-                'Content-Type': 'application/json',
-            },
-            json={
-                'model': OPENROUTER_MODEL,
-                'messages': [
-                    {'role': 'system', 'content': f'Classify the following text into one of these categories: {", ".join(categories)}. Respond with only the category name.'},
-                    {'role': 'user', 'content': text}
-                ],
-                'max_tokens': 50,
-                'temperature': 0.1
-            },
-            timeout=30
-        )
-        result = response.json()
-        category = result.get('choices', [{}])[0].get('message', {}).get('content', 'Unknown').strip()
-        log_audit(None, 'ai_classify', 'ai')
-        return jsonify({'data': {'category': category, 'available_categories': categories}})
-    except Exception as e:
-        return jsonify({'error': 'AI service error', 'details': str(e)}), 500
 
 @modules_bp.route('/api/ai/validate', methods=['POST'])
 def ai_validate():
-    """Validate/check content using AI"""
     data = request.get_json(silent=True) or {}
-    text = sanitize(data.get('text', ''))
-    check_type = sanitize(data.get('type', 'grammar'))
+    text = sanitize_content(data.get('text'))
+    vtype = sanitize_str(data.get('type', 'grammar'))
     if not text:
         return jsonify({'error': 'Text is required'}), 400
+    result, error = call_ai([
+        {'role': 'system', 'content': f'Check the following text for {vtype} issues. Point out errors and suggest corrections.'},
+        {'role': 'user', 'content': text}
+    ])
+    if error:
+        return jsonify({'error': error}), 503
+    return jsonify({'data': {'validation': result, 'type': vtype, 'model': AI_MODEL}})
 
-    if not OPENROUTER_API_KEY or OPENROUTER_API_KEY == 'your_openrouter_api_key_here':
-        return jsonify({'error': 'AI service not configured'}), 503
-
-    prompts = {
-        'grammar': 'Check the following text for grammar and spelling errors. List any issues found and provide corrections.',
-        'code': 'Review the following code for potential bugs, security issues, and best practices. Provide suggestions.',
-        'email': 'Review the following email for professionalism, clarity, and tone. Suggest improvements.',
-        'api': 'Validate the following API request/response for correctness and best practices.'
-    }
-    system_prompt = prompts.get(check_type, prompts['grammar'])
-
-    try:
-        response = requests.post(
-            'https://openrouter.ai/api/v1/chat/completions',
-            headers={
-                'Authorization': f'Bearer {OPENROUTER_API_KEY}',
-                'Content-Type': 'application/json',
-            },
-            json={
-                'model': OPENROUTER_MODEL,
-                'messages': [
-                    {'role': 'system', 'content': system_prompt},
-                    {'role': 'user', 'content': text}
-                ],
-                'max_tokens': 500,
-                'temperature': 0.3
-            },
-            timeout=30
-        )
-        result = response.json()
-        feedback = result.get('choices', [{}])[0].get('message', {}).get('content', 'No feedback')
-        log_audit(None, 'ai_validate', 'ai', check_type)
-        return jsonify({'data': {'feedback': feedback, 'check_type': check_type}})
-    except Exception as e:
-        return jsonify({'error': 'AI service error', 'details': str(e)}), 500
 
 @modules_bp.route('/api/ai/chat', methods=['POST'])
 def ai_chat():
-    """Interactive AI chat for learning"""
     data = request.get_json(silent=True) or {}
-    message = sanitize(data.get('message', ''))
-    context = sanitize(data.get('context', 'general'))
+    message = sanitize_content(data.get('message'))
+    context = sanitize_str(data.get('context', 'general'))
     if not message:
         return jsonify({'error': 'Message is required'}), 400
-    if len(message) > 1000:
-        return jsonify({'error': 'Message too long (max 1000 characters)'}), 400
-
-    if not OPENROUTER_API_KEY or OPENROUTER_API_KEY == 'your_openrouter_api_key_here':
-        return jsonify({'error': 'AI service not configured'}), 503
-
-    system_prompts = {
-        'general': 'You are a helpful teaching assistant. Answer questions clearly and provide examples when useful.',
-        'api': 'You are an API and HTTP expert. Help students understand REST APIs, HTTP methods, status codes, and CURL.',
-        'security': 'You are a cybersecurity expert. Help students understand web security, authentication, and best practices.',
-        'python': 'You are a Python programming tutor. Help students learn Python with clear examples.',
-    }
-
-    try:
-        response = requests.post(
-            'https://openrouter.ai/api/v1/chat/completions',
-            headers={
-                'Authorization': f'Bearer {OPENROUTER_API_KEY}',
-                'Content-Type': 'application/json',
-            },
-            json={
-                'model': OPENROUTER_MODEL,
-                'messages': [
-                    {'role': 'system', 'content': system_prompts.get(context, system_prompts['general'])},
-                    {'role': 'user', 'content': message}
-                ],
-                'max_tokens': 600,
-                'temperature': 0.7
-            },
-            timeout=30
-        )
-        result = response.json()
-        reply = result.get('choices', [{}])[0].get('message', {}).get('content', 'No response')
-        log_audit(None, 'ai_chat', 'ai', context)
-        return jsonify({'data': {'reply': reply, 'context': context}})
-    except Exception as e:
-        return jsonify({'error': 'AI service error', 'details': str(e)}), 500
+    result, error = call_ai([
+        {'role': 'system', 'content': f'You are an AI tutor helping with {context}. Be helpful, clear, and educational.'},
+        {'role': 'user', 'content': message}
+    ])
+    if error:
+        return jsonify({'error': error}), 503
+    return jsonify({'data': {'response': result, 'context': context, 'model': AI_MODEL}})
 
 
-# ============================================================
+# ==============================================================
 # UTILITY ENDPOINTS
-# ============================================================
+# ==============================================================
+
+@modules_bp.route('/api/echo', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
+def echo():
+    return jsonify({
+        'method': request.method,
+        'url': request.url,
+        'headers': dict(request.headers),
+        'query_params': dict(request.args),
+        'body': request.get_json(silent=True),
+        'content_type': request.content_type,
+        'ip': request.remote_addr,
+        'timestamp': __import__('datetime').datetime.utcnow().isoformat()
+    })
+
+
+@modules_bp.route('/api/headers', methods=['GET'])
+def show_headers():
+    return jsonify({
+        'your_headers': dict(request.headers),
+        'ip': request.remote_addr,
+        'method': request.method
+    })
+
+
+@modules_bp.route('/api/status-codes/<int:code>', methods=['GET'])
+def status_code(code):
+    messages = {
+        200: 'OK', 201: 'Created', 204: 'No Content',
+        301: 'Moved Permanently', 302: 'Found', 304: 'Not Modified',
+        400: 'Bad Request', 401: 'Unauthorized', 403: 'Forbidden',
+        404: 'Not Found', 405: 'Method Not Allowed', 409: 'Conflict',
+        429: 'Too Many Requests', 500: 'Internal Server Error',
+        502: 'Bad Gateway', 503: 'Service Unavailable'
+    }
+    msg = messages.get(code, 'Unknown Status Code')
+    return jsonify({'status_code': code, 'message': msg, 'description': f'This is a {code} {msg} response'}), code if code < 600 else 200
+
+
 @modules_bp.route('/api/health', methods=['GET'])
-def health_check():
+def health():
+    from freeze import get_freeze_info
+    freeze_info = get_freeze_info()
+    db = get_db()
+    counts = {}
+    for table in ['books', 'menu_items', 'tasks', 'students', 'notes', 'files', 'blog_posts', 'inventory']:
+        counts[table] = db.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    db.close()
     return jsonify({
         'status': 'healthy',
-        'timestamp': __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat(),
-        'version': '1.0.0'
+        'version': '2.0.0',
+        'deep_freeze': freeze_info,
+        'record_counts': counts,
+        'features': ['deep_freeze', 'api_key_tracking', 'file_security', 'i18n', 'rtl']
     })
+
 
 @modules_bp.route('/api/info', methods=['GET'])
 def api_info():
     return jsonify({
         'name': 'HTTP Playground API',
-        'version': '1.0.0',
-        'description': 'Educational HTTP playground and API training platform — ALL endpoints are public, no keys needed!',
+        'version': '2.0.0',
+        'description': 'The ultimate HTTP testing platform — GET/POST are public, PUT/DELETE need API key. Deep freeze auto-reverts changes!',
+        'deep_freeze': {
+            'enabled': True,
+            'post_auto_delete': '2 hours',
+            'put_auto_revert': '1 hour',
+            'delete_auto_restore': '1 hour'
+        },
+        'api_key': {
+            'max_requests': 20,
+            'regenerate': '/api/auth/regenerate-key'
+        },
         'modules': [
-            {'name': 'Library', 'path': '/api/books', 'level': 'beginner', 'auth': 'none'},
-            {'name': 'Restaurant Menu', 'path': '/api/menu', 'level': 'beginner', 'auth': 'none'},
-            {'name': 'Task Manager', 'path': '/api/tasks', 'level': 'beginner', 'auth': 'none'},
-            {'name': 'Student Management', 'path': '/api/students', 'level': 'beginner', 'auth': 'none'},
-            {'name': 'Notes', 'path': '/api/notes', 'level': 'beginner', 'auth': 'none'},
-            {'name': 'File Manager', 'path': '/api/files', 'level': 'beginner', 'auth': 'none'},
-            {'name': 'Blog', 'path': '/api/blog', 'level': 'beginner', 'auth': 'none'},
-            {'name': 'Inventory', 'path': '/api/inventory', 'level': 'beginner', 'auth': 'none'},
-            {'name': 'Weather', 'path': '/api/weather', 'level': 'beginner', 'auth': 'none'},
-            {'name': 'AI Assistant', 'path': '/api/ai/*', 'level': 'beginner', 'auth': 'none'},
+            {'name': 'Library', 'path': '/api/books', 'page': '/module/books', 'auth': {'get': 'none', 'post': 'none', 'put': 'api_key', 'delete': 'api_key'}},
+            {'name': 'Restaurant Menu', 'path': '/api/menu', 'page': '/module/menu', 'auth': {'get': 'none', 'post': 'none', 'put': 'api_key', 'delete': 'api_key'}},
+            {'name': 'Task Manager', 'path': '/api/tasks', 'page': '/module/tasks', 'auth': {'get': 'none', 'post': 'none', 'put': 'api_key', 'delete': 'api_key'}},
+            {'name': 'Student Management', 'path': '/api/students', 'page': '/module/students', 'auth': {'get': 'none', 'post': 'none', 'put': 'api_key', 'delete': 'api_key'}},
+            {'name': 'Notes', 'path': '/api/notes', 'page': '/module/notes', 'auth': {'get': 'none', 'post': 'none', 'put': 'api_key', 'delete': 'api_key'}},
+            {'name': 'File Manager', 'path': '/api/files', 'page': '/module/files', 'auth': {'get': 'none', 'post': 'none', 'put': 'n/a', 'delete': 'api_key'}},
+            {'name': 'Blog', 'path': '/api/blog', 'page': '/module/blog', 'auth': {'get': 'none', 'post': 'none', 'put': 'api_key', 'delete': 'api_key'}},
+            {'name': 'Inventory', 'path': '/api/inventory', 'page': '/module/inventory', 'auth': {'get': 'none', 'post': 'none', 'put': 'api_key', 'delete': 'api_key'}},
+            {'name': 'Weather', 'path': '/api/weather', 'page': '/module/weather', 'auth': {'get': 'none'}},
+            {'name': 'AI Assistant', 'path': '/api/ai/*', 'page': '/module/ai', 'auth': {'post': 'none'}},
         ],
         'documentation': '/docs'
     })
 
-@modules_bp.route('/api/echo', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
-def echo():
-    """Echo back the request details - great for learning HTTP"""
-    return jsonify({
-        'method': request.method,
-        'path': request.path,
-        'headers': dict(request.headers),
-        'args': dict(request.args),
-        'body': request.get_json(silent=True),
-        'ip': request.remote_addr,
-        'content_type': request.content_type
-    })
 
-@modules_bp.route('/api/status-codes/<int:code>', methods=['GET'])
-def status_code_demo(code):
-    """Return a specific HTTP status code - for learning"""
-    messages = {
-        200: 'OK - Request succeeded',
-        201: 'Created - Resource created successfully',
-        204: 'No Content - Request succeeded with no body',
-        301: 'Moved Permanently - Resource has been moved',
-        400: 'Bad Request - Invalid request syntax',
-        401: 'Unauthorized - Authentication required',
-        403: 'Forbidden - You do not have permission',
-        404: 'Not Found - Resource does not exist',
-        405: 'Method Not Allowed - HTTP method not supported',
-        409: 'Conflict - Resource conflict detected',
-        429: 'Too Many Requests - Rate limit exceeded',
-        500: 'Internal Server Error - Server failed',
-        502: 'Bad Gateway - Invalid response from upstream',
-        503: 'Service Unavailable - Server temporarily unavailable',
-    }
-    if code not in messages:
-        return jsonify({'error': f'Unknown status code {code}', 'available': list(messages.keys())}), 400
-    return jsonify({'status_code': code, 'message': messages[code]}), code if code < 400 else 200
+# ==============================================================
+# DEEP FREEZE ADMIN — Superadmin can add frozen baseline data
+# ==============================================================
 
-@modules_bp.route('/api/headers', methods=['GET'])
-def show_headers():
-    """Show all request headers - for learning"""
-    return jsonify({
-        'your_headers': dict(request.headers),
-        'your_ip': request.remote_addr,
-        'tip': 'Try adding custom headers with curl -H "X-Custom: value"'
-    })
+@modules_bp.route('/api/admin/freeze/status', methods=['GET'])
+@require_role('admin', 'superadmin')
+def freeze_status():
+    from freeze import get_freeze_info
+    return jsonify({'data': get_freeze_info()})
+
+
+@modules_bp.route('/api/admin/freeze/add-baseline', methods=['POST'])
+@require_role('superadmin')
+def add_baseline():
+    """Superadmin: add data permanently to the frozen baseline"""
+    data = request.get_json(silent=True) or {}
+    table = data.get('table')
+    record_id = data.get('record_id')
+    if not table or not record_id:
+        return jsonify({'error': 'table and record_id are required'}), 400
+    if table not in ['books', 'menu_items', 'tasks', 'students', 'notes', 'blog_posts', 'inventory']:
+        return jsonify({'error': 'Invalid table name'}), 400
+    db = get_db()
+    db.execute(f"UPDATE {table} SET is_frozen = 1, created_by_user = NULL WHERE id = ?", (record_id,))
+    # Remove any pending modification for this record
+    db.execute("DELETE FROM user_modifications WHERE table_name = ? AND record_id = ?", (table, record_id))
+    db.commit()
+    db.close()
+    return jsonify({'message': f'Record {record_id} in {table} is now frozen baseline data'})

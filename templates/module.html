@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ module.icon }} {{ module.title }} — HTTP Playground</title>
+    <meta name="description"
+        content="Interactive {{ module.title }} API page — view data, try CRUD operations, copy CURL examples.">
+    <link rel="icon" href="/static/images/http.png" type="image/png">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --bg-dark: #0f0f23;
+            --bg-card: rgba(255, 255, 255, 0.04);
+            --bg-card-hover: rgba(255, 255, 255, 0.08);
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+            --glass: rgba(255, 255, 255, 0.06);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        /* NAV */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            background: rgba(15, 15, 35, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .top-nav .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--text);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .top-nav .brand img {
+            width: 32px;
+            height: 32px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .nav-links a,
+        .nav-links button {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .nav-links a:hover,
+        .nav-links button:hover {
+            color: var(--text);
+            background: var(--bg-card-hover);
+        }
+
+        /* HERO */
+        .module-hero {
+            text-align: center;
+            padding: 3rem 2rem 2rem;
+        }
+
+        .module-hero .icon {
+            font-size: 3.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .module-hero h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .module-hero p {
+            color: var(--text-muted);
+            max-width: 500px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .endpoint-badge {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--primary-light);
+            padding: 0.4rem 1rem;
+            border-radius: 100px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            margin-top: 1rem;
+        }
+
+        /* DEEP FREEZE BANNER */
+        .freeze-banner {
+            max-width: 900px;
+            margin: 0 auto 1.5rem;
+            padding: 0.75rem 1.25rem;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .freeze-banner .icon {
+            font-size: 1.5rem;
+        }
+
+        /* CONTAINER */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem 3rem;
+        }
+
+        /* TABS */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 0.6rem 1.2rem;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-card);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            background: var(--bg-card-hover);
+            color: var(--text);
+        }
+
+        .tab-btn.active {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--primary-light);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* DATA TABLE */
+        .data-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .data-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .data-count {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--primary-light);
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .data-table-wrap {
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .data-table td {
+            padding: 0.65rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .data-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .refresh-btn {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: var(--bg-card-hover);
+            color: var(--text);
+        }
+
+        /* CRUD FORM */
+        .form-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-section h3 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.35rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.6rem 0.85rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.85rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .form-actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.55rem 1.25rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: #000;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        .btn-outline:hover {
+            background: var(--bg-card-hover);
+            color: var(--text);
+        }
+
+        /* API KEY INPUT */
+        .key-section {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(239, 68, 68, 0.05));
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .key-section label {
+            font-size: 0.8rem;
+            color: var(--warning);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .key-input-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .key-input-row input {
+            flex: 1;
+            padding: 0.5rem 0.85rem;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+
+        .key-input-row input:focus {
+            outline: none;
+            border-color: var(--warning);
+        }
+
+        /* CURL EXAMPLES */
+        .curl-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .curl-section h3 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .curl-block {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            position: relative;
+        }
+
+        .curl-block .method-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .method-get {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+        }
+
+        .method-post {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+        }
+
+        .method-put {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+        }
+
+        .method-delete {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+        }
+
+        .curl-block pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.5);
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .copy-btn.copied {
+            background: var(--success);
+            color: #fff;
+            border-color: var(--success);
+        }
+
+        /* RESPONSE BOX */
+        .response-box {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-top: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .response-box.show {
+            display: block;
+        }
+
+        .response-box pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--success);
+            white-space: pre-wrap;
+        }
+
+        .response-box.error pre {
+            color: var(--danger);
+        }
+
+        /* STATUS PILL */
+        .status-pill {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .pill-frozen {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+        }
+
+        .pill-user {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+        }
+
+        /* FOOTER */
+        .page-footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border);
+            margin-top: 2rem;
+        }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-success {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .toast-error {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .toast-info {
+            background: var(--info);
+            color: #fff;
+        }
+
+        @media (max-width: 768px) {
+            .top-nav {
+                padding: 0.75rem 1rem;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .container {
+                padding: 0 1rem 2rem;
+            }
+
+            .module-hero {
+                padding: 2rem 1rem 1.5rem;
+            }
+
+            .module-hero h1 {
+                font-size: 1.6rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .key-input-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- NAV -->
+    <nav class="top-nav">
+        <a href="/" class="brand">
+            <img src="/static/images/http.png" alt="HTTP">
+            <span>HTTP Playground</span>
+        </a>
+        <div class="nav-links">
+            <a href="/docs">📖 Docs</a>
+            <a href="/module/books">📚 Books</a>
+            <a href="/module/menu">🍽️ Menu</a>
+            <a href="/module/tasks">✅ Tasks</a>
+            <a href="/module/students">🎓 Students</a>
+            <a href="/module/weather">🌤️ Weather</a>
+            <a href="/module/ai">🤖 AI</a>
+            <button onclick="toggleLang()" id="langToggle">🌐 AR</button>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="module-hero">
+        <div class="icon">{{ module.icon }}</div>
+        <h1>{{ module.title }}</h1>
+        <p>Explore, test, and interact with the {{ module.title }} API. GET
+            and POST are public — no authentication needed!</p>
+        <div class="endpoint-badge">{{ module.endpoint }}</div>
+    </section>
+
+    <!-- DEEP FREEZE BANNER -->
+    <div class="container">
+        <div class="freeze-banner">
+            <span class="icon">🧊</span>
+            <span><strong>Deep Freeze Active:</strong> POST data auto-deletes in 2h · PUT changes auto-revert in 1h ·
+                DELETE restores in 1h. Frozen baseline data is permanent.</span>
+        </div>
+
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="data" onclick="switchTab('data')">📊 Live Data</button>
+            <button class="tab-btn" data-tab="create" onclick="switchTab('create')">➕ Create</button>
+            <button class="tab-btn" data-tab="update" onclick="switchTab('update')">✏️ Update</button>
+            <button class="tab-btn" data-tab="delete" onclick="switchTab('delete')">🗑️ Delete</button>
+            <button class="tab-btn" data-tab="curl" onclick="switchTab('curl')">📋 CURL Examples</button>
+        </div>
+
+        <!-- TAB: LIVE DATA -->
+        <div id="tab-data" class="tab-panel active">
+            <div class="data-section">
+                <div class="data-header">
+                    <h3>📊 {{ module.title }} Records</h3>
+                    <div style="display:flex;gap:0.5rem;align-items:center;">
+                        <span class="data-count" id="dataCount">0 records</span>
+                        <button class="refresh-btn" onclick="loadData()">🔄 Refresh</button>
+                    </div>
+                </div>
+                <div class="data-table-wrap">
+                    <table class="data-table" id="dataTable">
+                        <thead>
+                            <tr id="tableHead"></tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: CREATE -->
+        <div id="tab-create" class="tab-panel">
+            <div class="form-section">
+                <h3>➕ Create New Record <small style="color:var(--text-muted);font-weight:400">(Public — no API key
+                        needed)</small></h3>
+                <div class="form-grid" id="createFormFields"></div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" onclick="submitCreate()">🚀 Create</button>
+                    <button class="btn btn-outline" onclick="clearForm('create')">Clear</button>
+                </div>
+                <div class="response-box" id="createResponse">
+                    <pre></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: UPDATE -->
+        <div id="tab-update" class="tab-panel">
+            <div class="key-section">
+                <label>🔑 API Key Required for Update (PUT)</label>
+                <div class="key-input-row">
+                    <input type="text" id="updateApiKey" placeholder="nhk_your_api_key_here...">
+                </div>
+            </div>
+            <div class="form-section">
+                <h3>✏️ Update Record</h3>
+                <div class="form-group" style="margin-bottom:1rem;">
+                    <label>Record ID</label>
+                    <input type="number" id="updateId" placeholder="Enter the ID of the record to update"
+                        style="max-width:200px;">
+                </div>
+                <div class="form-grid" id="updateFormFields"></div>
+                <div class="form-actions">
+                    <button class="btn btn-warning" onclick="submitUpdate()">✏️ Update</button>
+                    <button class="btn btn-outline" onclick="clearForm('update')">Clear</button>
+                </div>
+                <div class="response-box" id="updateResponse">
+                    <pre></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: DELETE -->
+        <div id="tab-delete" class="tab-panel">
+            <div class="key-section">
+                <label>🔑 API Key Required for Delete (DELETE)</label>
+                <div class="key-input-row">
+                    <input type="text" id="deleteApiKey" placeholder="nhk_your_api_key_here...">
+                </div>
+            </div>
+            <div class="form-section">
+                <h3>🗑️ Delete Record</h3>
+                <div class="form-group" style="margin-bottom:1rem;">
+                    <label>Record ID</label>
+                    <input type="number" id="deleteId" placeholder="Enter the ID to delete" style="max-width:200px;">
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-danger" onclick="submitDelete()">🗑️ Delete</button>
+                </div>
+                <div class="response-box" id="deleteResponse">
+                    <pre></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: CURL EXAMPLES -->
+        <div id="tab-curl" class="tab-panel">
+            <div class="curl-section" id="curlExamples"></div>
+        </div>
+
+    </div>
+
+    <footer class="page-footer">
+        <p>🧊 HTTP Playground v2.0 — Deep Freeze keeps data safe • Built by Alaadin</p>
+    </footer>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <script src="/static/js/i18n.js"></script>
+    <script>
+        // ======================== MODULE CONFIG ========================
+        const MODULE_NAME = '{{ module_name }}';
+        const ENDPOINT = '{{ module.endpoint }}';
+        const BASE_URL = window.location.origin;
+
+        // Field definitions per module
+        const MODULE_FIELDS = {
+            books: [
+                { name: 'title', label: 'Title', type: 'text', required: true },
+                { name: 'author', label: 'Author', type: 'text', required: true },
+                { name: 'isbn', label: 'ISBN', type: 'text' },
+                { name: 'genre', label: 'Genre', type: 'select', options: ['Fiction', 'Technology', 'Science', 'History', 'Self-Help', 'Dystopian', 'Science Fiction', 'Philosophy', 'Business'] },
+                { name: 'year', label: 'Year', type: 'number' },
+                { name: 'available', label: 'Available', type: 'select', options: ['1', '0'] }
+            ],
+            menu: [
+                { name: 'name', label: 'Name', type: 'text', required: true },
+                { name: 'description', label: 'Description', type: 'textarea' },
+                { name: 'price', label: 'Price', type: 'number', step: '0.01', required: true },
+                { name: 'category', label: 'Category', type: 'select', options: ['Main Course', 'Appetizer', 'Dessert', 'Beverage', 'Sides'], required: true },
+                { name: 'is_available', label: 'Available', type: 'select', options: ['1', '0'] }
+            ],
+            tasks: [
+                { name: 'title', label: 'Title', type: 'text', required: true },
+                { name: 'description', label: 'Description', type: 'textarea' },
+                { name: 'status', label: 'Status', type: 'select', options: ['pending', 'in_progress', 'completed'] },
+                { name: 'priority', label: 'Priority', type: 'select', options: ['low', 'medium', 'high'] },
+                { name: 'due_date', label: 'Due Date', type: 'date' },
+                { name: 'assigned_to', label: 'Assigned To', type: 'text' }
+            ],
+            students: [
+                { name: 'name', label: 'Name', type: 'text', required: true },
+                { name: 'email', label: 'Email', type: 'email' },
+                { name: 'student_id', label: 'Student ID', type: 'text' },
+                { name: 'major', label: 'Major', type: 'text' },
+                { name: 'gpa', label: 'GPA', type: 'number', step: '0.01' },
+                { name: 'enrollment_year', label: 'Enrollment Year', type: 'number' }
+            ],
+            notes: [
+                { name: 'title', label: 'Title', type: 'text', required: true },
+                { name: 'content', label: 'Content', type: 'textarea' },
+                { name: 'category', label: 'Category', type: 'select', options: ['Work', 'Personal', 'Learning', 'Ideas'] },
+                { name: 'is_pinned', label: 'Pinned', type: 'select', options: ['0', '1'] }
+            ],
+            files: [],
+            blog: [
+                { name: 'title', label: 'Title', type: 'text', required: true },
+                { name: 'content', label: 'Content', type: 'textarea', required: true },
+                { name: 'author', label: 'Author', type: 'text' },
+                { name: 'tags', label: 'Tags (comma-separated)', type: 'text' },
+                { name: 'is_published', label: 'Published', type: 'select', options: ['1', '0'] }
+            ],
+            inventory: [
+                { name: 'name', label: 'Name', type: 'text', required: true },
+                { name: 'sku', label: 'SKU', type: 'text' },
+                { name: 'quantity', label: 'Quantity', type: 'number' },
+                { name: 'price', label: 'Price', type: 'number', step: '0.01' },
+                { name: 'category', label: 'Category', type: 'text' },
+                { name: 'warehouse', label: 'Warehouse', type: 'text' }
+            ],
+            weather: [],
+            ai: []
+        };
+
+        // CURL example templates
+        const CURL_EXAMPLES = {
+            books: [
+                { method: 'GET', label: 'List all books', cmd: `curl ${BASE_URL}/api/books` },
+                { method: 'GET', label: 'Get a single book', cmd: `curl ${BASE_URL}/api/books/1` },
+                { method: 'GET', label: 'Search books', cmd: `curl "${BASE_URL}/api/books?search=python"` },
+                { method: 'POST', label: 'Create a book', cmd: `curl -X POST ${BASE_URL}/api/books \\\n  -H "Content-Type: application/json" \\\n  -d '{"title":"My Book","author":"Me","genre":"Technology","year":2026}'` },
+                { method: 'PUT', label: 'Update a book', cmd: `curl -X PUT ${BASE_URL}/api/books/1 \\\n  -H "Content-Type: application/json" \\\n  -H "X-API-Key: YOUR_KEY" \\\n  -d '{"title":"Updated Title"}'` },
+                { method: 'DELETE', label: 'Delete a book', cmd: `curl -X DELETE ${BASE_URL}/api/books/1 \\\n  -H "X-API-Key: YOUR_KEY"` }
+            ],
+            menu: [
+                { method: 'GET', label: 'List all menu items', cmd: `curl ${BASE_URL}/api/menu` },
+                { method: 'GET', label: 'Filter by category', cmd: `curl "${BASE_URL}/api/menu?category=Main Course"` },
+                { method: 'POST', label: 'Create menu item', cmd: `curl -X POST ${BASE_URL}/api/menu \\\n  -H "Content-Type: application/json" \\\n  -d '{"name":"New Dish","price":15.99,"category":"Main Course"}'` },
+                { method: 'PUT', label: 'Update menu item', cmd: `curl -X PUT ${BASE_URL}/api/menu/1 \\\n  -H "Content-Type: application/json" \\\n  -H "X-API-Key: YOUR_KEY" \\\n  -d '{"price":19.99}'` },
+                { method: 'DELETE', label: 'Delete menu item', cmd: `curl -X DELETE ${BASE_URL}/api/menu/1 \\\n  -H "X-API-Key: YOUR_KEY"` }
+            ],
+            tasks: [
+                { method: 'GET', label: 'List all tasks', cmd: `curl ${BASE_URL}/api/tasks` },
+                { method: 'GET', label: 'Filter by status', cmd: `curl "${BASE_URL}/api/tasks?status=pending"` },
+                { method: 'POST', label: 'Create task', cmd: `curl -X POST ${BASE_URL}/api/tasks \\\n  -H "Content-Type: application/json" \\\n  -d '{"title":"New Task","priority":"high","status":"pending"}'` },
+                { method: 'PUT', label: 'Update task', cmd: `curl -X PUT ${BASE_URL}/api/tasks/1 \\\n  -H "Content-Type: application/json" \\\n  -H "X-API-Key: YOUR_KEY" \\\n  -d '{"status":"completed"}'` },
+                { method: 'DELETE', label: 'Delete task', cmd: `curl -X DELETE ${BASE_URL}/api/tasks/1 \\\n  -H "X-API-Key: YOUR_KEY"` }
+            ],
+            students: [
+                { method: 'GET', label: 'List all students', cmd: `curl ${BASE_URL}/api/students` },
+                { method: 'GET', label: 'Filter by major', cmd: `curl "${BASE_URL}/api/students?major=Computer Science"` },
+                { method: 'POST', label: 'Create student', cmd: `curl -X POST ${BASE_URL}/api/students \\\n  -H "Content-Type: application/json" \\\n  -d '{"name":"New Student","email":"student@uni.edu","major":"CS","gpa":3.5}'` },
+                { method: 'PUT', label: 'Update student', cmd: `curl -X PUT ${BASE_URL}/api/students/1 \\\n  -H "Content-Type: application/json" \\\n  -H "X-API-Key: YOUR_KEY" \\\n  -d '{"gpa":3.9}'` },
+                { method: 'DELETE', label: 'Delete student', cmd: `curl -X DELETE ${BASE_URL}/api/students/1 \\\n  -H "X-API-Key: YOUR_KEY"` }
+            ],
+            notes: [
+                { method: 'GET', label: 'List all notes', cmd: `curl ${BASE_URL}/api/notes` },
+                { method: 'POST', label: 'Create note', cmd: `curl -X POST ${BASE_URL}/api/notes \\\n  -H "Content-Type: application/json" \\\n  -d '{"title":"My Note","content":"Hello world","category":"Learning"}'` },
+                { method: 'PUT', label: 'Update note', cmd: `curl -X PUT ${BASE_URL}/api/notes/1 \\\n  -H "Content-Type: application/json" \\\n  -H "X-API-Key: YOUR_KEY" \\\n  -d '{"content":"Updated content"}'` },
+                { method: 'DELETE', label: 'Delete note', cmd: `curl -X DELETE ${BASE_URL}/api/notes/1 \\\n  -H "X-API-Key: YOUR_KEY"` }
+            ],
+            files: [
+                { method: 'GET', label: 'List all files', cmd: `curl ${BASE_URL}/api/files` },
+                { method: 'POST', label: 'Upload file', cmd: `curl -X POST ${BASE_URL}/api/files/upload \\\n  -F "file=@myfile.txt"` },
+                { method: 'GET', label: 'Download file', cmd: `curl ${BASE_URL}/api/files/download/1 -O` },
+                { method: 'DELETE', label: 'Delete file', cmd: `curl -X DELETE ${BASE_URL}/api/files/1 \\\n  -H "X-API-Key: YOUR_KEY"` }
+            ],
+            blog: [
+                { method: 'GET', label: 'List all posts', cmd: `curl ${BASE_URL}/api/blog` },
+                { method: 'GET', label: 'Filter by tag', cmd: `curl "${BASE_URL}/api/blog?tag=api"` },
+                { method: 'POST', label: 'Create post', cmd: `curl -X POST ${BASE_URL}/api/blog \\\n  -H "Content-Type: application/json" \\\n  -d '{"title":"My Post","content":"Article content here","author":"Me","tags":"api,test"}'` },
+                { method: 'PUT', label: 'Update post', cmd: `curl -X PUT ${BASE_URL}/api/blog/1 \\\n  -H "Content-Type: application/json" \\\n  -H "X-API-Key: YOUR_KEY" \\\n  -d '{"title":"Updated Post Title"}'` },
+                { method: 'DELETE', label: 'Delete post', cmd: `curl -X DELETE ${BASE_URL}/api/blog/1 \\\n  -H "X-API-Key: YOUR_KEY"` }
+            ],
+            inventory: [
+                { method: 'GET', label: 'List all inventory', cmd: `curl ${BASE_URL}/api/inventory` },
+                { method: 'GET', label: 'Low stock items', cmd: `curl "${BASE_URL}/api/inventory?low_stock=true"` },
+                { method: 'POST', label: 'Add inventory item', cmd: `curl -X POST ${BASE_URL}/api/inventory \\\n  -H "Content-Type: application/json" \\\n  -d '{"name":"New Item","sku":"NEW-001","quantity":100,"price":49.99,"category":"Electronics"}'` },
+                { method: 'PUT', label: 'Update inventory', cmd: `curl -X PUT ${BASE_URL}/api/inventory/1 \\\n  -H "Content-Type: application/json" \\\n  -H "X-API-Key: YOUR_KEY" \\\n  -d '{"quantity":75}'` },
+                { method: 'DELETE', label: 'Delete inventory item', cmd: `curl -X DELETE ${BASE_URL}/api/inventory/1 \\\n  -H "X-API-Key: YOUR_KEY"` }
+            ],
+            weather: [
+                { method: 'GET', label: 'All cities', cmd: `curl ${BASE_URL}/api/weather` },
+                { method: 'GET', label: 'Specific city', cmd: `curl "${BASE_URL}/api/weather?city=dubai"` },
+                { method: 'GET', label: 'Compare cities', cmd: `curl "${BASE_URL}/api/weather/compare?city1=dubai&city2=london"` }
+            ],
+            ai: [
+                { method: 'POST', label: 'Generate text', cmd: `curl -X POST ${BASE_URL}/api/ai/generate \\\n  -H "Content-Type: application/json" \\\n  -d '{"prompt":"Explain REST APIs in 2 sentences"}'` },
+                { method: 'POST', label: 'Summarize text', cmd: `curl -X POST ${BASE_URL}/api/ai/summarize \\\n  -H "Content-Type: application/json" \\\n  -d '{"text":"Your long text here..."}'` },
+                { method: 'POST', label: 'Chat', cmd: `curl -X POST ${BASE_URL}/api/ai/chat \\\n  -H "Content-Type: application/json" \\\n  -d '{"message":"What is HTTP?","context":"web development"}'` },
+                { method: 'POST', label: 'Classify text', cmd: `curl -X POST ${BASE_URL}/api/ai/classify \\\n  -H "Content-Type: application/json" \\\n  -d '{"text":"Great product!","categories":["positive","negative","neutral"]}'` }
+            ]
+        };
+
+        // Display column priorities (first N shown in table)
+        const TABLE_COLUMNS = {
+            books: ['id', 'title', 'author', 'genre', 'year', 'available', 'is_frozen'],
+            menu: ['id', 'name', 'price', 'category', 'is_available', 'is_frozen'],
+            tasks: ['id', 'title', 'status', 'priority', 'due_date', 'assigned_to', 'is_frozen'],
+            students: ['id', 'name', 'email', 'student_id', 'major', 'gpa', 'is_frozen'],
+            notes: ['id', 'title', 'category', 'is_pinned', 'is_frozen'],
+            files: ['id', 'original_name', 'file_type', 'file_size', 'is_frozen'],
+            blog: ['id', 'title', 'author', 'tags', 'is_published', 'is_frozen'],
+            inventory: ['id', 'name', 'sku', 'quantity', 'price', 'category', 'warehouse', 'is_frozen'],
+            weather: ['city', 'country', 'temp', 'humidity', 'condition', 'wind_speed', 'uv_index'],
+            ai: []
+        };
+
+        // ======================== INIT ========================
+        document.addEventListener('DOMContentLoaded', () => {
+            buildForms();
+            buildCurlExamples();
+            loadData();
+        });
+
+        // ======================== TAB SWITCHING ========================
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+        }
+
+        // ======================== LOAD DATA ========================
+        async function loadData() {
+            const cols = TABLE_COLUMNS[MODULE_NAME] || [];
+            if (cols.length === 0) {
+                document.getElementById('tableHead').innerHTML = '<th>This module does not have a data table</th>';
+                document.getElementById('tableBody').innerHTML = '<tr><td>Use the CURL examples tab to interact with this API</td></tr>';
+                document.getElementById('dataCount').textContent = 'N/A';
+                return;
+            }
+            try {
+                const resp = await fetch(ENDPOINT);
+                const json = await resp.json();
+                const data = json.data || [];
+                document.getElementById('dataCount').textContent = `${data.length} records`;
+
+                // Build headers
+                const headRow = cols.map(c => `<th>${c.replace(/_/g, ' ').toUpperCase()}</th>`).join('');
+                document.getElementById('tableHead').innerHTML = headRow;
+
+                // Build rows
+                if (Array.isArray(data) && data.length > 0) {
+                    const rows = data.map(item => {
+                        const cells = cols.map(c => {
+                            let val = item[c];
+                            if (c === 'is_frozen') {
+                                return val ? '<span class="status-pill pill-frozen">🧊 Frozen</span>' : '<span class="status-pill pill-user">👤 User</span>';
+                            }
+                            if (val === null || val === undefined) return '<span style="color:var(--text-muted)">—</span>';
+                            return String(val);
+                        });
+                        return `<tr>${cells.map(c => `<td>${c}</td>`).join('')}</tr>`;
+                    }).join('');
+                    document.getElementById('tableBody').innerHTML = rows;
+                } else {
+                    document.getElementById('tableBody').innerHTML = '<tr><td colspan="' + cols.length + '" style="text-align:center;padding:2rem;color:var(--text-muted)">No records found</td></tr>';
+                }
+            } catch (e) {
+                document.getElementById('tableBody').innerHTML = `<tr><td colspan="${cols.length}" style="color:var(--danger)">Error loading data: ${e.message}</td></tr>`;
+            }
+        }
+
+        // ======================== BUILD FORMS ========================
+        function buildForms() {
+            const fields = MODULE_FIELDS[MODULE_NAME] || [];
+            ['create', 'update'].forEach(mode => {
+                const container = document.getElementById(`${mode}FormFields`);
+                if (!container) return;
+                container.innerHTML = fields.map(f => {
+                    const id = `${mode}_${f.name}`;
+                    let input;
+                    if (f.type === 'textarea') {
+                        input = `<textarea id="${id}" placeholder="${f.label}..." rows="3"></textarea>`;
+                    } else if (f.type === 'select') {
+                        const opts = (f.options || []).map(o => `<option value="${o}">${o}</option>`).join('');
+                        input = `<select id="${id}"><option value="">Select...</option>${opts}</select>`;
+                    } else {
+                        input = `<input type="${f.type || 'text'}" id="${id}" placeholder="${f.label}..." ${f.step ? `step="${f.step}"` : ''}>`;
+                    }
+                    return `<div class="form-group"><label>${f.label}${f.required ? ' *' : ''}</label>${input}</div>`;
+                }).join('');
+            });
+        }
+
+        // ======================== BUILD CURL EXAMPLES ========================
+        function buildCurlExamples() {
+            const examples = CURL_EXAMPLES[MODULE_NAME] || [];
+            const container = document.getElementById('curlExamples');
+            container.innerHTML = `<h3>📋 CURL Examples</h3>` + examples.map((ex, i) => {
+                const methodClass = `method-${ex.method.toLowerCase()}`;
+                return `
+            <div class="curl-block">
+                <span class="method-badge ${methodClass}">${ex.method}</span>
+                <strong style="margin-left:0.5rem;font-size:0.85rem">${ex.label}</strong>
+                <button class="copy-btn" onclick="copyCmd(this, ${i})">📋 Copy</button>
+                <pre>${ex.cmd}</pre>
+            </div>`;
+            }).join('');
+        }
+
+        // ======================== SUBMIT CREATE ========================
+        async function submitCreate() {
+            const fields = MODULE_FIELDS[MODULE_NAME] || [];
+            if (fields.length === 0) {
+                showToast('This module does not support form creation', 'error');
+                return;
+            }
+            const body = {};
+            for (const f of fields) {
+                const el = document.getElementById(`create_${f.name}`);
+                if (el && el.value) {
+                    body[f.name] = f.type === 'number' ? parseFloat(el.value) : el.value;
+                }
+            }
+            if (Object.keys(body).length === 0) {
+                showToast('Please fill in at least one field', 'error');
+                return;
+            }
+            try {
+                const resp = await fetch(ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const json = await resp.json();
+                showResponse('createResponse', json, resp.ok);
+                if (resp.ok) {
+                    showToast('✅ Created successfully!', 'success');
+                    loadData();
+                } else {
+                    showToast(`❌ ${json.error || 'Error'}`, 'error');
+                }
+            } catch (e) {
+                showToast(`❌ ${e.message}`, 'error');
+            }
+        }
+
+        // ======================== SUBMIT UPDATE ========================
+        async function submitUpdate() {
+            const id = document.getElementById('updateId').value;
+            const apiKey = document.getElementById('updateApiKey').value;
+            if (!id) { showToast('Enter a record ID', 'error'); return; }
+            if (!apiKey) { showToast('API key is required for UPDATE', 'error'); return; }
+
+            const fields = MODULE_FIELDS[MODULE_NAME] || [];
+            const body = {};
+            for (const f of fields) {
+                const el = document.getElementById(`update_${f.name}`);
+                if (el && el.value) {
+                    body[f.name] = f.type === 'number' ? parseFloat(el.value) : el.value;
+                }
+            }
+            if (Object.keys(body).length === 0) {
+                showToast('Fill in fields to update', 'error');
+                return;
+            }
+            try {
+                const resp = await fetch(`${ENDPOINT}/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
+                    body: JSON.stringify(body)
+                });
+                const json = await resp.json();
+                showResponse('updateResponse', json, resp.ok);
+                if (resp.ok) {
+                    showToast('✅ Updated!', 'success');
+                    loadData();
+                    showRemainingRequests(resp);
+                } else {
+                    showToast(`❌ ${json.error || 'Error'}`, 'error');
+                }
+            } catch (e) {
+                showToast(`❌ ${e.message}`, 'error');
+            }
+        }
+
+        // ======================== SUBMIT DELETE ========================
+        async function submitDelete() {
+            const id = document.getElementById('deleteId').value;
+            const apiKey = document.getElementById('deleteApiKey').value;
+            if (!id) { showToast('Enter a record ID', 'error'); return; }
+            if (!apiKey) { showToast('API key is required for DELETE', 'error'); return; }
+
+            try {
+                const resp = await fetch(`${ENDPOINT}/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'X-API-Key': apiKey }
+                });
+                const json = await resp.json();
+                showResponse('deleteResponse', json, resp.ok);
+                if (resp.ok) {
+                    showToast('✅ Deleted!', 'success');
+                    loadData();
+                    showRemainingRequests(resp);
+                } else {
+                    showToast(`❌ ${json.error || 'Error'}`, 'error');
+                }
+            } catch (e) {
+                showToast(`❌ ${e.message}`, 'error');
+            }
+        }
+
+        // ======================== HELPERS ========================
+        function showResponse(boxId, data, ok) {
+            const box = document.getElementById(boxId);
+            box.classList.add('show');
+            box.classList.toggle('error', !ok);
+            box.querySelector('pre').textContent = JSON.stringify(data, null, 2);
+        }
+
+        function showRemainingRequests(resp) {
+            const remaining = resp.headers.get('X-API-Requests-Remaining');
+            const max = resp.headers.get('X-API-Requests-Max');
+            if (remaining !== null) {
+                showToast(`🔑 API Key: ${remaining}/${max} requests remaining`, 'info');
+            }
+        }
+
+        function clearForm(mode) {
+            const fields = MODULE_FIELDS[MODULE_NAME] || [];
+            fields.forEach(f => {
+                const el = document.getElementById(`${mode}_${f.name}`);
+                if (el) el.value = '';
+            });
+        }
+
+        function copyCmd(btn, index) {
+            const cmd = (CURL_EXAMPLES[MODULE_NAME] || [])[index]?.cmd;
+            if (!cmd) return;
+            navigator.clipboard.writeText(cmd).then(() => {
+                btn.textContent = '✅ Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '📋 Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast toast-${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 4000);
+        }
+
+        // Language toggle
+        function toggleLang() {
+            const html = document.documentElement;
+            const isAr = html.getAttribute('lang') === 'ar';
+            html.setAttribute('lang', isAr ? 'en' : 'ar');
+            html.setAttribute('dir', isAr ? 'ltr' : 'rtl');
+            document.getElementById('langToggle').textContent = isAr ? '🌐 AR' : '🌐 EN';
+        }
+    </script>
+</body>
+
+</html>
