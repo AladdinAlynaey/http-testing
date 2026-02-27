@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTTP Playground - Learn APIs, CURL & HTTP</title>
+    <title>HTTP Playground — Learn APIs, CURL & HTTP | 20 Modules, 100+ Endpoints</title>
     <meta name="description"
-        content="Production-grade educational HTTP playground for learning REST APIs, CURL commands, HTTP methods, security, and automation.">
+        content="Production-grade educational HTTP playground with 20 API modules, 100+ endpoints, Deep Freeze data sandbox, and dual API key system.">
     <link rel="icon" type="image/png" href="/static/images/http.png">
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -16,7 +16,7 @@
     <div class="bg-grid"></div>
     <div class="bg-glow"></div>
 
-    <!-- Header -->
+    <!-- Sticky Header -->
     <header class="header">
         <div class="header-inner">
             <a href="/" class="logo">
@@ -25,7 +25,85 @@
             </a>
             <nav class="nav">
                 <a href="/"><i class="fas fa-home"></i> <span data-i18n="nav.home">Home</span></a>
+                <div class="dropdown" id="homeModulesDropdown" style="position:relative;display:inline-block">
+                    <button onclick="document.getElementById('homeModulesDropdown').classList.toggle('open')"
+                        style="background:none;border:1px solid var(--border-color,#475569);border-radius:8px;padding:6px 14px;color:inherit;cursor:pointer;font-family:inherit;font-size:.9rem;display:flex;align-items:center;gap:6px">
+                        📦 Modules <span style="font-size:.7rem">▼</span>
+                    </button>
+                    <div class="dropdown-menu"
+                        style="display:none;position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--card-bg,#1e293b);border:1px solid var(--border-color,#475569);border-radius:12px;padding:8px;min-width:260px;max-height:420px;overflow-y:auto;box-shadow:0 20px 40px rgba(0,0,0,.4);z-index:1001">
+                        <a href="/module/books"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">📚
+                            Library System</a>
+                        <a href="/module/menu"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">🍽️
+                            Restaurant Menu</a>
+                        <a href="/module/tasks"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">✅
+                            Task Manager</a>
+                        <a href="/module/students"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">🎓
+                            Student Management</a>
+                        <a href="/module/notes"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">📝
+                            Notes System</a>
+                        <a href="/module/files"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">📁
+                            File Manager</a>
+                        <a href="/module/blog"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">✍️
+                            Blog Platform</a>
+                        <a href="/module/inventory"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">📦
+                            Inventory System</a>
+                        <a href="/module/products"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">🛍️
+                            Product Store</a>
+                        <a href="/module/movies"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">🎬
+                            Movie Database</a>
+                        <a href="/module/recipes"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">🧑‍🍳
+                            Recipe Book</a>
+                        <a href="/module/events"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">📅
+                            Event Calendar</a>
+                        <a href="/module/contacts"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">📇
+                            Address Book</a>
+                        <a href="/module/songs"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">🎵
+                            Music Library</a>
+                        <a href="/module/quotes"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">💬
+                            Quotes Collection</a>
+                        <a href="/module/countries"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">🌍
+                            World Countries</a>
+                        <a href="/module/jokes"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">😂
+                            Joke API</a>
+                        <a href="/module/vehicles"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">🚗
+                            Vehicle Market</a>
+                        <a href="/module/courses"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">🎓
+                            Online Courses</a>
+                        <a href="/module/pets"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">🐾
+                            Pet Adoption</a>
+                        <a href="/module/weather"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">🌤️
+                            Weather API</a>
+                        <a href="/module/ai"
+                            style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;color:var(--text-color);text-decoration:none;font-size:.85rem">🤖
+                            AI Assistant</a>
+                    </div>
+                </div>
                 <a href="/docs"><i class="fas fa-book"></i> <span data-i18n="nav.docs">Docs</span></a>
+                <a href="https://github.com/AladdinAlynaey/http-testing" target="_blank" class="github-star-link">
+                    <i class="fab fa-github"></i> <span>⭐ Star</span>
+                </a>
                 <div id="auth-nav">
                     <a href="/login"><i class="fas fa-sign-in-alt"></i> <span data-i18n="nav.login">Login</span></a>
                     <a href="/register" class="btn-primary"><i class="fas fa-user-plus"></i> <span
@@ -41,15 +119,15 @@
     <!-- Hero -->
     <section class="hero">
         <h1 data-i18n="hero.title">Master HTTP & REST APIs</h1>
-        <p data-i18n="hero.subtitle">A production-grade playground to learn HTTP requests, REST APIs, CURL commands,
-            authentication, and API security — with real endpoints you can test right now.</p>
+        <p data-i18n="hero.subtitle">A production-grade playground with 20 API modules, 100+ endpoints, Deep Freeze
+            data sandbox, and dual API key system — everything you need to master HTTP.</p>
         <div class="hero-badges">
-            <span class="badge beginner"><i class="fas fa-seedling"></i> <span data-i18n="hero.badge.beginner">10 API
-                    Modules</span></span>
-            <span class="badge intermediate"><i class="fas fa-fire"></i> <span data-i18n="hero.badge.intermediate">50+
-                    CURL Examples</span></span>
-            <span class="badge advanced"><i class="fas fa-rocket"></i> <span data-i18n="hero.badge.advanced">No Auth
-                    Needed</span></span>
+            <span class="badge beginner"><i class="fas fa-cubes"></i> <span>20 API Modules</span></span>
+            <span class="badge intermediate"><i class="fas fa-fire"></i> <span>100+ Endpoints</span></span>
+            <span class="badge advanced"><i class="fas fa-lock-open"></i> <span>No Auth for
+                    GET/POST</span></span>
+            <span class="badge" style="background:rgba(99,102,241,0.15);color:#818cf8"><i class="fas fa-snowflake"></i>
+                <span>Deep Freeze 🧊</span></span>
         </div>
     </section>
 
@@ -58,15 +136,26 @@
         <div class="toolbar">
             <div class="toolbar-left">
                 <h2 data-i18n="toolbar.title">API Modules</h2>
-                <span class="count" id="modules-count" data-i18n="toolbar.count">10 modules</span>
+                <span class="count" id="modules-count" data-i18n="toolbar.count">22 modules</span>
             </div>
             <div class="toolbar-right">
-                <select class="filter-select" onchange="renderModuleCards(this.value)">
-                    <option value="all" data-i18n="toolbar.all">All Levels</option>
-                    <option value="beginner">Beginner</option>
-                    <option value="intermediate">Intermediate</option>
-                    <option value="advanced">Advanced</option>
-                </select>
+                <div class="custom-filter" id="levelFilter">
+                    <button class="filter-btn"
+                        onclick="document.getElementById('levelFilter').classList.toggle('open')">
+                        <span id="filterLabel">🎯 All Levels</span>
+                        <span style="font-size:.65rem;margin-left:6px">▼</span>
+                    </button>
+                    <div class="filter-options">
+                        <div class="filter-option active" data-value="all"
+                            onclick="selectFilter(this,'all','🎯 All Levels')">🎯 All Levels</div>
+                        <div class="filter-option" data-value="beginner"
+                            onclick="selectFilter(this,'beginner','🟢 Beginner')">🟢 Beginner</div>
+                        <div class="filter-option" data-value="intermediate"
+                            onclick="selectFilter(this,'intermediate','🟡 Intermediate')">🟡 Intermediate</div>
+                        <div class="filter-option" data-value="advanced"
+                            onclick="selectFilter(this,'advanced','🔴 Advanced')">🔴 Advanced</div>
+                    </div>
+                </div>
                 <div class="view-toggle">
                     <button data-view="grid" class="active" onclick="setView('grid')" title="Grid view"><i
                             class="fas fa-th-large"></i></button>
@@ -77,97 +166,51 @@
         </div>
 
         <div class="cards-grid" id="modules-grid"></div>
-
-        <!-- Quick Start Section -->
-        <section style="margin-top:60px">
-            <h2 style="text-align:center;margin-bottom:8px" data-i18n="quickstart.title">⚡ Quick Start — Just Copy &
-                Paste</h2>
-            <p style="text-align:center;color:var(--text-secondary);margin-bottom:32px" data-i18n="quickstart.subtitle">
-                Every command works instantly — no API keys, no login, no setup needed!</p>
-
-            <h3 style="margin-bottom:16px;color:var(--success)">📚 Library — Books</h3>
-            <div
-                style="display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:12px;margin-bottom:32px">
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Get all books
-curl https://n8nhttp.alaadin-alynaey.site/api/books</code></div>
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Get book by ID
-curl https://n8nhttp.alaadin-alynaey.site/api/books/1</code></div>
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Search books
-curl "https://n8nhttp.alaadin-alynaey.site/api/books?search=gatsby"</code></div>
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Filter by genre
-curl "https://n8nhttp.alaadin-alynaey.site/api/books?genre=Fiction"</code></div>
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Create a book
-curl -X POST https://n8nhttp.alaadin-alynaey.site/api/books \
-  -H "Content-Type: application/json" \
-  -d '{"title":"My Book","author":"Me","genre":"Tech"}'</code></div>
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Update a book
-curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/books/1 \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Updated Title"}'</code></div>
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Delete a book
-curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/books/3</code></div>
-            </div>
-
-            <h3 style="margin-bottom:16px;color:var(--warning)">🍽️ Restaurant Menu</h3>
-            <div
-                style="display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:12px;margin-bottom:32px">
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Get full menu
-curl https://n8nhttp.alaadin-alynaey.site/api/menu</code></div>
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Filter by category
-curl "https://n8nhttp.alaadin-alynaey.site/api/menu?category=Dessert"</code></div>
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Add a menu item
-curl -X POST https://n8nhttp.alaadin-alynaey.site/api/menu \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Pizza","price":12.99,"category":"Main"}'</code></div>
-            </div>
-
-            <h3 style="margin-bottom:16px;color:var(--info)">✅ Tasks</h3>
-            <div
-                style="display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:12px;margin-bottom:32px">
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Get all tasks
-curl https://n8nhttp.alaadin-alynaey.site/api/tasks</code></div>
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Create a high priority task
-curl -X POST https://n8nhttp.alaadin-alynaey.site/api/tasks \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Learn CURL","priority":"high"}'</code></div>
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Mark task as completed
-curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/tasks/1 \
-  -H "Content-Type: application/json" \
-  -d '{"status":"completed"}'</code></div>
-            </div>
-
-            <h3 style="margin-bottom:16px;color:var(--accent)">🌤️ Weather & More</h3>
-            <div
-                style="display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:12px;margin-bottom:32px">
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Get weather for a city
-curl "https://n8nhttp.alaadin-alynaey.site/api/weather?city=dubai"</code></div>
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Compare two cities
-curl "https://n8nhttp.alaadin-alynaey.site/api/weather/compare?city1=tokyo&city2=london"</code></div>
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Echo (see your request details)
-curl https://n8nhttp.alaadin-alynaey.site/api/echo</code></div>
-                <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># See your headers
-curl https://n8nhttp.alaadin-alynaey.site/api/headers</code></div>
-            </div>
-        </section>
     </main>
 
-    <!-- Footer -->
+    <!-- Sticky Footer -->
     <footer class="footer">
         <div class="footer-links">
             <a href="/docs" data-i18n="footer.docs">Documentation</a>
             <a href="/docs#curl-examples" data-i18n="footer.examples">CURL Examples</a>
             <a href="/docs#security" data-i18n="footer.security">Security</a>
+            <a href="https://github.com/AladdinAlynaey/http-testing" target="_blank"><i class="fab fa-github"></i>
+                GitHub</a>
         </div>
         <p class="footer-text">
-            <span data-i18n="footer.built">Built by</span> <strong>Alaadin</strong> &nbsp;•&nbsp;
-            <span data-i18n="footer.powered">Powered by AI via</span> <a href="https://openrouter.ai"
-                target="_blank">OpenRouter</a> &nbsp;•&nbsp;
+            <span data-i18n="footer.built">Built by</span> <a href="https://alaadin-alynaey.site"
+                target="_blank"><strong>Alaadin</strong></a> &nbsp;•&nbsp;
+            v3.0 — 20 Modules • 100+ Endpoints • Deep Freeze 🧊 &nbsp;•&nbsp;
             &copy; 2026 HTTP Playground
         </p>
     </footer>
 
+    <style>
+        .dropdown.open .dropdown-menu {
+            display: block !important;
+        }
+
+        .dropdown-menu a:hover {
+            background: rgba(99, 102, 241, .1);
+        }
+    </style>
     <script src="/static/js/i18n.js"></script>
     <script src="/static/js/app.js"></script>
+    <script>
+        function selectFilter(el, value, label) {
+            document.getElementById('filterLabel').textContent = label;
+            document.querySelectorAll('.filter-option').forEach(o => o.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('levelFilter').classList.remove('open');
+            renderModuleCards(value);
+        }
+        document.addEventListener('click', e => {
+            const dd = document.getElementById('homeModulesDropdown');
+            if (dd && !dd.contains(e.target)) dd.classList.remove('open');
+            const lf = document.getElementById('levelFilter');
+            if (lf && !lf.contains(e.target)) lf.classList.remove('open');
+        });
+    </script>
 </body>
 
 </html>

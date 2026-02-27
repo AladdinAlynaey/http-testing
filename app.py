@@ -1,65 +1,55 @@
 """
-HTTP Playground & API Training Platform v2.0
-Main Flask Application with Security Middleware, Deep Freeze Daemon
+HTTP Playground v3.0 — Main Application
+20 modules, dual API keys, Deep Freeze daemon, per-user isolation
 """
 import os
-import time
-import secrets
-from datetime import datetime, timezone, timedelta
-from flask import Flask, request, jsonify, render_template, g
-from flask_cors import CORS
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-from werkzeug.security import generate_password_hash, check_password_hash
+import threading
+from datetime import datetime
+from functools import wraps
 from dotenv import load_dotenv
 
 load_dotenv()
 
+from flask import Flask, request, jsonify, render_template, g
+from flask_cors import CORS
 from database import init_db, get_db
 from auth import (
-    create_access_token, create_refresh_token, decode_token,
-    generate_api_key, get_current_user, require_auth, require_role,
-    is_locked_out, record_login_attempt, log_audit, get_request_fingerprint,
-    SUPER_ADMIN_USERNAME, SUPER_ADMIN_PASSWORD, SUPER_ADMIN_EMAIL
+    hash_password, verify_password, create_access_token, create_refresh_token,
+    decode_token, generate_api_key, get_current_user, require_role,
+    track_login_attempt, is_locked_out, log_audit,
+    STANDARD_KEY_LIMIT, AI_KEY_LIMIT
 )
-from modules import modules_bp
-from freeze import start_freeze_daemon
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_UPLOAD_SIZE', 2097152))  # 2MB
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB
 
-# ============================================================
-# CORS - Strict Configuration
-# ============================================================
-CORS(app, resources={
-    r"/api/*": {
-        "origins": [
-            "https://n8nhttp.alaadin-alynaey.site",
-            "http://localhost:5050",
-            "http://127.0.0.1:5050"
-        ],
-        "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization", "X-API-Key"],
-        "expose_headers": ["X-RateLimit-Remaining", "X-Request-Id", "X-API-Requests-Remaining", "X-API-Requests-Max"],
-        "max_age": 600
-    }
-})
+CORS(app, resources={r"/api/*": {"origins": "*"}}, expose_headers=[
+    "X-API-Requests-Remaining", "X-API-Requests-Max", "X-API-Key-Type",
+    "X-AI-Requests-Remaining", "X-AI-Requests-Max"
+])
 
-# ============================================================
-# RATE LIMITING
-# ============================================================
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["200 per minute"],
-    storage_uri="memory://",
-    strategy="fixed-window"
-)
+# ============ RATE LIMITING ============
+from collections import defaultdict
+import time
+
+rate_limits = defaultdict(list)
+
+def rate_limit(max_calls, window_seconds):
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            key = f"{request.remote_addr}:{f.__name__}"
+            now = time.time()
+            rate_limits[key] = [t for t in rate_limits[key] if now - t < window_seconds]
+            if len(rate_limits[key]) >= max_calls:
+                return jsonify({'error': 'Rate limit exceeded', 'retry_after': window_seconds}), 429
+            rate_limits[key].append(now)
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
 
 
-# ============================================================
-# SECURITY HEADERS MIDDLEWARE
-# ============================================================
+# ============ SECURITY HEADERS ============
 @app.after_request
 def add_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
@@ -67,418 +57,452 @@ def add_security_headers(response):
     response.headers['X-XSS-Protection'] = '1; mode=block'
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-    response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
-    response.headers['Content-Security-Policy'] = (
-        "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; "
-        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; "
-        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
-        "img-src 'self' data: https:; "
-        "connect-src 'self' https://openrouter.ai"
-    )
-    rid = request.headers.get('X-Request-Id', secrets.token_hex(8))
-    response.headers['X-Request-Id'] = rid
     return response
 
 
-# ============================================================
-# REQUEST LOGGING
-# ============================================================
+# ============ REQUEST LOGGING ============
 @app.before_request
 def log_request():
-    g.request_start = time.time()
-
-@app.after_request
-def log_response(response):
-    if hasattr(g, 'request_start'):
-        duration = round((time.time() - g.request_start) * 1000, 2)
-        response.headers['X-Response-Time'] = f'{duration}ms'
-    return response
+    g.request_start = datetime.utcnow()
 
 
-# ============================================================
-# REGISTER BLUEPRINTS
-# ============================================================
+# ============ REGISTER MODULES ============
+from modules import modules_bp
 app.register_blueprint(modules_bp)
 
 
-# ============================================================
-# AUTH ROUTES
-# ============================================================
+# ============ AUTH ROUTES ============
 @app.route('/api/auth/register', methods=['POST'])
-@limiter.limit("5 per minute")
+@rate_limit(5, 60)
 def register():
-    data = request.get_json(silent=True) or {}
-    import bleach
-    username = bleach.clean(str(data.get('username', '')).strip(), tags=[], strip=True)
-    email = bleach.clean(str(data.get('email', '')).strip(), tags=[], strip=True)
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'JSON body required'}), 400
+
+    username = data.get('username', '').strip()
+    email = data.get('email', '').strip()
     password = data.get('password', '')
 
     if not username or not email or not password:
-        return jsonify({'error': 'Username, email, and password are required'}), 400
-    if len(username) < 3 or len(username) > 30:
-        return jsonify({'error': 'Username must be 3-30 characters'}), 400
-    if len(password) < 8:
-        return jsonify({'error': 'Password must be at least 8 characters'}), 400
-    if '@' not in email or '.' not in email:
-        return jsonify({'error': 'Invalid email format'}), 400
+        return jsonify({'error': 'username, email, and password are required'}), 400
+    if len(username) < 3 or len(username) > 50:
+        return jsonify({'error': 'Username must be 3-50 characters'}), 400
+    if len(password) < 6:
+        return jsonify({'error': 'Password must be at least 6 characters'}), 400
 
-    # Block super admin credential registration
-    if username.lower() == SUPER_ADMIN_USERNAME.lower():
-        return jsonify({'error': 'Username not available'}), 409
-
-    db = get_db()
-    existing = db.execute("SELECT id FROM users WHERE username=? OR email=?", (username, email)).fetchone()
+    conn = get_db()
+    existing = conn.execute("SELECT id FROM users WHERE username = ? OR email = ?", (username, email)).fetchone()
     if existing:
-        db.close()
-        return jsonify({'error': 'Username or email already registered'}), 409
+        conn.close()
+        return jsonify({'error': 'Username or email already exists'}), 409
 
-    pwd_hash = generate_password_hash(password)
-    db.execute(
-        "INSERT INTO users (username, email, password_hash, role, status) VALUES (?,?,?,?,?)",
-        (username, email, pwd_hash, 'user', 'pending')
-    )
-    db.commit()
-    db.close()
-    log_audit(None, 'register', 'auth', f'New registration: {username}')
+    pw_hash = hash_password(password)
+    conn.execute("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)", (username, email, pw_hash))
+    conn.commit()
+    conn.close()
+
     return jsonify({
         'message': 'Registration successful! Your account is pending admin approval.',
-        'status': 'pending'
+        'status': 'pending',
+        'next_steps': 'An admin will review and approve your account. Once approved, login to get your API keys.'
     }), 201
 
 
 @app.route('/api/auth/login', methods=['POST'])
-@limiter.limit("10 per minute")
+@rate_limit(10, 60)
 def login():
-    data = request.get_json(silent=True) or {}
-    username = str(data.get('username', '')).strip()
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'JSON body required'}), 400
+
+    username = data.get('username', '').strip()
     password = data.get('password', '')
 
     if not username or not password:
-        return jsonify({'error': 'Username and password are required'}), 400
+        return jsonify({'error': 'username and password required'}), 400
 
-    ip = request.remote_addr
-    if is_locked_out(username) or is_locked_out(ip):
-        return jsonify({'error': 'Account temporarily locked. Try again later.'}), 429
+    if is_locked_out(username):
+        return jsonify({'error': 'Account locked due to too many failed attempts. Try again in 15 minutes.'}), 423
 
-    # Check super admin
-    if username == SUPER_ADMIN_USERNAME and password == SUPER_ADMIN_PASSWORD:
-        record_login_attempt(username, True, ip)
-        token = create_access_token(0, 'superadmin', SUPER_ADMIN_USERNAME)
-        refresh = create_refresh_token(0)
-        log_audit(0, 'login', 'auth', 'Super admin login')
-        return jsonify({
-            'message': 'Login successful',
-            'access_token': token,
-            'refresh_token': refresh,
-            'user': {
-                'id': 0,
-                'username': SUPER_ADMIN_USERNAME,
-                'email': SUPER_ADMIN_EMAIL,
-                'role': 'superadmin',
-                'status': 'approved'
-            }
-        })
+    conn = get_db()
+    user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
 
-    # Check regular user
-    db = get_db()
-    user = db.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
-    db.close()
-
-    if not user or not check_password_hash(user['password_hash'], password):
-        record_login_attempt(username, False, ip)
+    if not user or not verify_password(password, user['password_hash']):
+        track_login_attempt(username, False, request.remote_addr)
+        conn.close()
         return jsonify({'error': 'Invalid credentials'}), 401
 
     if user['status'] != 'approved':
-        return jsonify({'error': f'Account is {user["status"]}. Please wait for admin approval.'}), 403
+        conn.close()
+        return jsonify({'error': 'Account not approved yet', 'status': user['status']}), 403
 
-    record_login_attempt(username, True, ip)
-    token = create_access_token(user['id'], user['role'], user['username'])
-    refresh = create_refresh_token(user['id'])
-    log_audit(user['id'], 'login', 'auth')
+    track_login_attempt(username, True, request.remote_addr)
 
-    # Get API key
-    db = get_db()
-    key_row = db.execute(
-        "SELECT key, request_count, max_requests FROM api_keys WHERE user_id=? AND is_active=1 ORDER BY id DESC LIMIT 1",
+    # Generate/fetch both API keys
+    standard_key = conn.execute(
+        "SELECT * FROM api_keys WHERE user_id = ? AND key_type = 'standard' AND is_active = 1",
         (user['id'],)
     ).fetchone()
-    db.close()
+
+    if not standard_key:
+        new_key = generate_api_key('standard')
+        conn.execute(
+            "INSERT INTO api_keys (user_id, key, key_type, max_requests) VALUES (?, ?, 'standard', ?)",
+            (user['id'], new_key, STANDARD_KEY_LIMIT)
+        )
+        standard_key_str = new_key
+        standard_remaining = STANDARD_KEY_LIMIT
+    else:
+        standard_key_str = standard_key['key']
+        standard_remaining = standard_key['max_requests'] - standard_key['request_count']
+
+    ai_key = conn.execute(
+        "SELECT * FROM api_keys WHERE user_id = ? AND key_type = 'ai'",
+        (user['id'],)
+    ).fetchone()
+
+    if not ai_key:
+        new_ai_key = generate_api_key('ai')
+        conn.execute(
+            "INSERT INTO api_keys (user_id, key, key_type, max_requests) VALUES (?, ?, 'ai', ?)",
+            (user['id'], new_ai_key, AI_KEY_LIMIT)
+        )
+        ai_key_str = new_ai_key
+        ai_remaining = AI_KEY_LIMIT
+    else:
+        ai_key_str = ai_key['key']
+        ai_remaining = max(0, ai_key['max_requests'] - ai_key['request_count'])
+
+    conn.commit()
+    conn.close()
+
+    access_token = create_access_token(user['id'], user['username'], user['role'])
+    refresh_token = create_refresh_token(user['id'])
+
+    log_audit(user['id'], 'login', 'auth', f'IP: {request.remote_addr}')
 
     return jsonify({
         'message': 'Login successful',
-        'access_token': token,
-        'refresh_token': refresh,
-        'api_key': key_row['key'] if key_row else None,
-        'api_key_info': {
-            'requests_used': key_row['request_count'],
-            'requests_remaining': key_row['max_requests'] - key_row['request_count'],
-            'max_requests': key_row['max_requests']
-        } if key_row else None,
-        'user': {
-            'id': user['id'],
-            'username': user['username'],
-            'email': user['email'],
-            'role': user['role'],
-            'status': user['status']
+        'access_token': access_token,
+        'refresh_token': refresh_token,
+        'user': {'id': user['id'], 'username': user['username'], 'role': user['role']},
+        'api_keys': {
+            'standard': {
+                'key': standard_key_str,
+                'type': 'standard',
+                'prefix': 'nhk_',
+                'requests_remaining': standard_remaining,
+                'max_requests': STANDARD_KEY_LIMIT,
+                'usage': 'For PUT and DELETE on all modules (except AI)',
+                'regenerable': True
+            },
+            'ai': {
+                'key': ai_key_str,
+                'type': 'ai',
+                'prefix': 'nai_',
+                'requests_remaining': ai_remaining,
+                'max_requests': AI_KEY_LIMIT,
+                'usage': 'For AI endpoints only (generate, summarize, chat, classify)',
+                'regenerable': False,
+                'note': f'You get exactly {AI_KEY_LIMIT} AI requests total. No regeneration.'
+            }
         }
     })
 
 
 @app.route('/api/auth/refresh', methods=['POST'])
-def refresh_token():
-    data = request.get_json(silent=True) or {}
-    token = data.get('refresh_token', '')
-    payload = decode_token(token)
+def refresh():
+    data = request.get_json()
+    if not data or not data.get('refresh_token'):
+        return jsonify({'error': 'refresh_token required'}), 400
+
+    payload = decode_token(data['refresh_token'])
     if not payload or payload.get('type') != 'refresh':
-        return jsonify({'error': 'Invalid refresh token'}), 401
+        return jsonify({'error': 'Invalid or expired refresh token'}), 401
 
-    user_id = payload['user_id']
-    if user_id == 0:
-        new_token = create_access_token(0, 'superadmin', SUPER_ADMIN_USERNAME)
-    else:
-        db = get_db()
-        user = db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
-        db.close()
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
-        new_token = create_access_token(user['id'], user['role'], user['username'])
+    conn = get_db()
+    user = conn.execute("SELECT * FROM users WHERE id = ?", (payload['user_id'],)).fetchone()
+    conn.close()
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
 
-    return jsonify({'access_token': new_token})
+    access_token = create_access_token(user['id'], user['username'], user['role'])
+    return jsonify({'access_token': access_token})
 
 
 @app.route('/api/auth/me', methods=['GET'])
-@require_auth
 def get_me():
-    user = g.current_user
-    if user.get('user_id') == 0:
-        return jsonify({'data': {
-            'id': 0, 'username': SUPER_ADMIN_USERNAME,
-            'email': SUPER_ADMIN_EMAIL, 'role': 'superadmin', 'status': 'approved'
-        }})
-    db = get_db()
-    row = db.execute("SELECT id,username,email,role,status,created_at FROM users WHERE id=?",
-                     (user['user_id'],)).fetchone()
-    key_row = db.execute(
-        "SELECT key,scope,request_count,max_requests,created_at,last_used FROM api_keys WHERE user_id=? AND is_active=1 ORDER BY id DESC LIMIT 1",
-        (user['user_id'],)
-    ).fetchone()
-    db.close()
-    if not row:
-        return jsonify({'error': 'User not found'}), 404
-    data = dict(row)
-    if key_row:
-        kd = dict(key_row)
-        kd['requests_remaining'] = kd['max_requests'] - kd['request_count']
-        data['api_key'] = kd
-    else:
-        data['api_key'] = None
-    return jsonify({'data': data})
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    conn = get_db()
+    keys = conn.execute("SELECT key, key_type, request_count, max_requests, is_active FROM api_keys WHERE user_id = ?", (user['id'],)).fetchall()
+    conn.close()
+
+    return jsonify({
+        'user': {'id': user['id'], 'username': user['username'], 'email': user['email'], 'role': user['role']},
+        'api_keys': [dict(k) for k in keys]
+    })
 
 
-# ============================================================
-# API KEY MANAGEMENT
-# ============================================================
+# ============ KEY MANAGEMENT ============
 @app.route('/api/auth/key-status', methods=['GET'])
-@require_auth
 def key_status():
-    """Check your API key status and remaining requests"""
-    user = g.current_user
-    db = get_db()
-    keys = db.execute(
-        "SELECT id, key, request_count, max_requests, is_active, created_at, last_used FROM api_keys WHERE user_id=? ORDER BY id DESC",
-        (user['user_id'],)
-    ).fetchall()
-    db.close()
-    result = []
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Authentication required (Bearer token)'}), 401
+
+    conn = get_db()
+    keys = conn.execute("SELECT key, key_type, request_count, max_requests, is_active, created_at, last_used FROM api_keys WHERE user_id = ?", (user['id'],)).fetchall()
+    conn.close()
+
+    result = {'standard': None, 'ai': None}
     for k in keys:
         kd = dict(k)
         kd['requests_remaining'] = max(0, kd['max_requests'] - kd['request_count'])
-        result.append(kd)
-    return jsonify({'data': result, 'count': len(result)})
+        if kd['key_type'] == 'standard' and kd['is_active']:
+            result['standard'] = kd
+        elif kd['key_type'] == 'ai':
+            result['ai'] = kd
+
+    return jsonify({'api_keys': result})
 
 
 @app.route('/api/auth/regenerate-key', methods=['POST'])
-@require_auth
-def regenerate_key():
-    """Deactivate old key and generate a new one with 20 fresh requests"""
-    user = g.current_user
-    db = get_db()
-    # Deactivate all old keys
-    db.execute("UPDATE api_keys SET is_active=0 WHERE user_id=?", (user['user_id'],))
-    # Generate new key
-    new_key = generate_api_key()
-    db.execute(
-        "INSERT INTO api_keys (user_id, key, scope, request_count, max_requests) VALUES (?,?,?,0,20)",
-        (user['user_id'], new_key, 'intermediate')
+def regenerate_standard_key():
+    """Regenerate STANDARD API key only. AI keys cannot be regenerated."""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Authentication required (Bearer token)'}), 401
+
+    conn = get_db()
+    # Deactivate all existing standard keys
+    conn.execute("UPDATE api_keys SET is_active = 0 WHERE user_id = ? AND key_type = 'standard'", (user['id'],))
+    # Create new standard key
+    new_key = generate_api_key('standard')
+    conn.execute(
+        "INSERT INTO api_keys (user_id, key, key_type, max_requests) VALUES (?, ?, 'standard', ?)",
+        (user['id'], new_key, STANDARD_KEY_LIMIT)
     )
-    db.commit()
-    db.close()
-    log_audit(user['user_id'], 'regenerate_key', 'auth')
+    conn.commit()
+    conn.close()
+
+    log_audit(user['id'], 'regenerate_standard_key', 'auth')
+
     return jsonify({
-        'message': 'New API key generated! You have 20 fresh requests.',
-        'api_key': new_key,
-        'requests_remaining': 20,
-        'max_requests': 20
+        'message': 'New standard API key generated',
+        'standard_key': {
+            'key': new_key,
+            'type': 'standard',
+            'prefix': 'nhk_',
+            'requests_remaining': STANDARD_KEY_LIMIT,
+            'max_requests': STANDARD_KEY_LIMIT
+        },
+        'note': 'Your old standard key has been deactivated. AI key is not affected.'
     })
 
 
-# ============================================================
-# ADMIN ROUTES
-# ============================================================
+# ============ ADMIN ROUTES ============
 @app.route('/api/admin/users', methods=['GET'])
 @require_role('admin', 'superadmin')
-def admin_list_users():
-    db = get_db()
-    status_filter = request.args.get('status')
-    query = "SELECT id,username,email,role,status,created_at FROM users"
-    params = []
-    if status_filter:
-        query += " WHERE status=?"
-        params.append(status_filter)
-    query += " ORDER BY created_at DESC"
-    rows = db.execute(query, params).fetchall()
-    db.close()
-    return jsonify({'data': [dict(r) for r in rows], 'count': len(rows)})
+def admin_users():
+    conn = get_db()
+    users = conn.execute("SELECT id, username, email, role, status, created_at FROM users ORDER BY created_at DESC").fetchall()
+    conn.close()
+    return jsonify({'data': [dict(u) for u in users]})
 
-
-@app.route('/api/admin/users/<int:user_id>/approve', methods=['POST'])
+@app.route('/api/admin/approve/<int:user_id>', methods=['POST'])
 @require_role('admin', 'superadmin')
-def admin_approve_user(user_id):
-    db = get_db()
-    user = db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+def approve_user(user_id):
+    conn = get_db()
+    user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     if not user:
-        db.close()
+        conn.close()
         return jsonify({'error': 'User not found'}), 404
-    if user['status'] == 'approved':
-        db.close()
-        return jsonify({'message': 'User already approved'}), 200
+    conn.execute("UPDATE users SET status = 'approved' WHERE id = ?", (user_id,))
 
-    db.execute("UPDATE users SET status='approved', updated_at=CURRENT_TIMESTAMP WHERE id=?", (user_id,))
+    # Auto-generate both keys for approved user
+    existing_standard = conn.execute("SELECT id FROM api_keys WHERE user_id = ? AND key_type = 'standard' AND is_active = 1", (user_id,)).fetchone()
+    if not existing_standard:
+        conn.execute("INSERT INTO api_keys (user_id, key, key_type, max_requests) VALUES (?, ?, 'standard', ?)",
+                     (user_id, generate_api_key('standard'), STANDARD_KEY_LIMIT))
 
-    # Generate API key for approved user (20 requests)
-    api_key = generate_api_key()
-    db.execute(
-        "INSERT INTO api_keys (user_id, key, scope, request_count, max_requests) VALUES (?,?,?,0,20)",
-        (user_id, api_key, 'intermediate')
-    )
-    db.commit()
-    db.close()
-    log_audit(g.current_user.get('user_id'), 'approve_user', f'user:{user_id}')
-    return jsonify({
-        'message': f'User {user["username"]} approved with API key (20 requests)',
-        'api_key': api_key
-    })
+    existing_ai = conn.execute("SELECT id FROM api_keys WHERE user_id = ? AND key_type = 'ai'", (user_id,)).fetchone()
+    if not existing_ai:
+        conn.execute("INSERT INTO api_keys (user_id, key, key_type, max_requests) VALUES (?, ?, 'ai', ?)",
+                     (user_id, generate_api_key('ai'), AI_KEY_LIMIT))
 
+    conn.commit()
+    conn.close()
+    log_audit(g.current_user['id'], 'approve_user', 'admin', f'Approved user {user_id}')
+    return jsonify({'message': f'User {user["username"]} approved with both standard and AI API keys'})
 
-@app.route('/api/admin/users/<int:user_id>/reject', methods=['POST'])
+@app.route('/api/admin/reject/<int:user_id>', methods=['POST'])
 @require_role('admin', 'superadmin')
-def admin_reject_user(user_id):
-    db = get_db()
-    user = db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
-    if not user:
-        db.close()
-        return jsonify({'error': 'User not found'}), 404
-    db.execute("UPDATE users SET status='rejected', updated_at=CURRENT_TIMESTAMP WHERE id=?", (user_id,))
-    db.commit()
-    db.close()
-    log_audit(g.current_user.get('user_id'), 'reject_user', f'user:{user_id}')
-    return jsonify({'message': f'User {user["username"]} rejected'})
-
-
-@app.route('/api/admin/users/<int:user_id>/role', methods=['PUT'])
-@require_role('superadmin')
-def admin_change_role(user_id):
-    data = request.get_json(silent=True) or {}
-    new_role = data.get('role', '')
-    if new_role not in ('user', 'admin'):
-        return jsonify({'error': 'Role must be user or admin'}), 400
-    db = get_db()
-    db.execute("UPDATE users SET role=?, updated_at=CURRENT_TIMESTAMP WHERE id=?", (new_role, user_id))
-    db.commit()
-    db.close()
-    log_audit(g.current_user.get('user_id'), 'change_role', f'user:{user_id}', new_role)
-    return jsonify({'message': f'Role updated to {new_role}'})
-
-
-@app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
-@require_role('superadmin')
-def admin_delete_user(user_id):
-    db = get_db()
-    user = db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
-    if not user:
-        db.close()
-        return jsonify({'error': 'User not found'}), 404
-    db.execute("DELETE FROM api_keys WHERE user_id=?", (user_id,))
-    db.execute("DELETE FROM users WHERE id=?", (user_id,))
-    db.commit()
-    db.close()
-    log_audit(g.current_user.get('user_id'), 'delete_user', f'user:{user_id}')
-    return jsonify({'message': 'User deleted'})
-
-
-@app.route('/api/admin/keys', methods=['GET'])
-@require_role('admin', 'superadmin')
-def admin_list_keys():
-    db = get_db()
-    rows = db.execute(
-        """SELECT ak.*, u.username FROM api_keys ak JOIN users u ON ak.user_id = u.id
-           ORDER BY ak.created_at DESC"""
-    ).fetchall()
-    db.close()
-    result = []
-    for r in rows:
-        d = dict(r)
-        d['requests_remaining'] = max(0, d['max_requests'] - d['request_count'])
-        result.append(d)
-    return jsonify({'data': result})
-
-
-@app.route('/api/admin/keys/<int:key_id>/revoke', methods=['POST'])
-@require_role('admin', 'superadmin')
-def admin_revoke_key(key_id):
-    db = get_db()
-    db.execute("UPDATE api_keys SET is_active=0 WHERE id=?", (key_id,))
-    db.commit()
-    db.close()
-    log_audit(g.current_user.get('user_id'), 'revoke_key', f'key:{key_id}')
-    return jsonify({'message': 'API key revoked'})
-
-
-@app.route('/api/admin/audit', methods=['GET'])
-@require_role('admin', 'superadmin')
-def admin_audit_logs():
-    db = get_db()
-    limit = min(int(request.args.get('limit', 50)), 200)
-    rows = db.execute("SELECT * FROM audit_logs ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
-    db.close()
-    return jsonify({'data': [dict(r) for r in rows]})
-
+def reject_user(user_id):
+    conn = get_db()
+    conn.execute("UPDATE users SET status = 'rejected' WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({'message': 'User rejected'})
 
 @app.route('/api/admin/stats', methods=['GET'])
 @require_role('admin', 'superadmin')
 def admin_stats():
-    db = get_db()
+    conn = get_db()
     stats = {
-        'total_users': db.execute("SELECT COUNT(*) FROM users").fetchone()[0],
-        'pending_users': db.execute("SELECT COUNT(*) FROM users WHERE status='pending'").fetchone()[0],
-        'approved_users': db.execute("SELECT COUNT(*) FROM users WHERE status='approved'").fetchone()[0],
-        'active_keys': db.execute("SELECT COUNT(*) FROM api_keys WHERE is_active=1").fetchone()[0],
-        'total_books': db.execute("SELECT COUNT(*) FROM books").fetchone()[0],
-        'total_tasks': db.execute("SELECT COUNT(*) FROM tasks").fetchone()[0],
-        'total_posts': db.execute("SELECT COUNT(*) FROM blog_posts").fetchone()[0],
-        'total_students': db.execute("SELECT COUNT(*) FROM students").fetchone()[0],
-        'total_inventory': db.execute("SELECT COUNT(*) FROM inventory").fetchone()[0],
-        'pending_modifications': db.execute("SELECT COUNT(*) FROM user_modifications").fetchone()[0],
-        'recent_logs': db.execute("SELECT COUNT(*) FROM audit_logs WHERE created_at > datetime('now','-24 hours')").fetchone()[0],
+        'users': {
+            'total': conn.execute("SELECT COUNT(*) FROM users").fetchone()[0],
+            'approved': conn.execute("SELECT COUNT(*) FROM users WHERE status = 'approved'").fetchone()[0],
+            'pending': conn.execute("SELECT COUNT(*) FROM users WHERE status = 'pending'").fetchone()[0],
+        },
+        'api_keys': {
+            'standard_active': conn.execute("SELECT COUNT(*) FROM api_keys WHERE key_type = 'standard' AND is_active = 1").fetchone()[0],
+            'ai_active': conn.execute("SELECT COUNT(*) FROM api_keys WHERE key_type = 'ai' AND is_active = 1").fetchone()[0],
+            'total_standard_requests': conn.execute("SELECT COALESCE(SUM(request_count),0) FROM api_keys WHERE key_type = 'standard'").fetchone()[0],
+            'total_ai_requests': conn.execute("SELECT COALESCE(SUM(request_count),0) FROM api_keys WHERE key_type = 'ai'").fetchone()[0],
+        },
+        'deep_freeze': {
+            'pending_modifications': conn.execute("SELECT COUNT(*) FROM user_modifications WHERE expires_at > datetime('now')").fetchone()[0],
+        },
+        'modules': {}
     }
-    db.close()
-    return jsonify({'data': stats})
+    tables = ['books','menu_items','tasks','students','notes','files','blog_posts','inventory',
+              'products','movies','recipes','events','contacts','songs','quotes','countries',
+              'jokes','vehicles','courses','pets']
+    for t in tables:
+        try:
+            stats['modules'][t] = conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+        except:
+            stats['modules'][t] = 0
+    conn.close()
+    return jsonify(stats)
 
 
-# ============================================================
-# PAGE ROUTES (serve HTML)
-# ============================================================
+# ============ MODULE PAGES ============
+MODULE_INFO = {
+    'books': {'title': 'Library System', 'icon': '📚', 'endpoint': '/api/books', 'table': 'books'},
+    'menu': {'title': 'Restaurant Menu', 'icon': '🍽️', 'endpoint': '/api/menu', 'table': 'menu_items'},
+    'tasks': {'title': 'Task Manager', 'icon': '✅', 'endpoint': '/api/tasks', 'table': 'tasks'},
+    'students': {'title': 'Student Management', 'icon': '🎓', 'endpoint': '/api/students', 'table': 'students'},
+    'notes': {'title': 'Notes System', 'icon': '📝', 'endpoint': '/api/notes', 'table': 'notes'},
+    'files': {'title': 'File Manager', 'icon': '📁', 'endpoint': '/api/files', 'table': 'files'},
+    'blog': {'title': 'Blog Platform', 'icon': '✍️', 'endpoint': '/api/blog', 'table': 'blog_posts'},
+    'inventory': {'title': 'Inventory System', 'icon': '📦', 'endpoint': '/api/inventory', 'table': 'inventory'},
+    'products': {'title': 'Product Store', 'icon': '🛍️', 'endpoint': '/api/products', 'table': 'products'},
+    'movies': {'title': 'Movie Database', 'icon': '🎬', 'endpoint': '/api/movies', 'table': 'movies'},
+    'recipes': {'title': 'Recipe Book', 'icon': '🧑‍🍳', 'endpoint': '/api/recipes', 'table': 'recipes'},
+    'events': {'title': 'Event Calendar', 'icon': '📅', 'endpoint': '/api/events', 'table': 'events'},
+    'contacts': {'title': 'Address Book', 'icon': '📇', 'endpoint': '/api/contacts', 'table': 'contacts'},
+    'songs': {'title': 'Music Library', 'icon': '🎵', 'endpoint': '/api/songs', 'table': 'songs'},
+    'quotes': {'title': 'Quotes Collection', 'icon': '💬', 'endpoint': '/api/quotes', 'table': 'quotes'},
+    'countries': {'title': 'World Countries', 'icon': '🌍', 'endpoint': '/api/countries', 'table': 'countries'},
+    'jokes': {'title': 'Joke API', 'icon': '😂', 'endpoint': '/api/jokes', 'table': 'jokes'},
+    'vehicles': {'title': 'Vehicle Market', 'icon': '🚗', 'endpoint': '/api/vehicles', 'table': 'vehicles'},
+    'courses': {'title': 'Online Courses', 'icon': '🎓', 'endpoint': '/api/courses', 'table': 'courses'},
+    'pets': {'title': 'Pet Adoption', 'icon': '🐾', 'endpoint': '/api/pets', 'table': 'pets'},
+    'weather': {'title': 'Weather API', 'icon': '🌤️', 'endpoint': '/api/weather', 'table': None},
+    'ai': {'title': 'AI Assistant', 'icon': '🤖', 'endpoint': '/api/ai', 'table': None},
+}
+
+@app.route('/module/<name>')
+def module_page(name):
+    if name not in MODULE_INFO:
+        return render_template('index.html'), 404
+    info = MODULE_INFO[name]
+    return render_template('module.html', module_name=name, module=info)
+
+
+# ============ UTILITY API ENDPOINTS ============
+@app.route('/api/health', methods=['GET'])
+def health():
+    conn = get_db()
+    module_counts = {}
+    for name, info in MODULE_INFO.items():
+        if info['table']:
+            try:
+                module_counts[name] = conn.execute(f"SELECT COUNT(*) FROM {info['table']}").fetchone()[0]
+            except:
+                module_counts[name] = 0
+    conn.close()
+    return jsonify({
+        'status': 'healthy',
+        'version': '3.0.0',
+        'modules': 20,
+        'total_endpoints': '100+',
+        'module_records': module_counts,
+        'features': ['deep_freeze', 'dual_api_keys', 'per_user_isolation', 'file_security', 'ai_assistant'],
+        'api_key_system': {
+            'standard': {'prefix': 'nhk_', 'limit': STANDARD_KEY_LIMIT, 'regenerable': True},
+            'ai': {'prefix': 'nai_', 'limit': AI_KEY_LIMIT, 'regenerable': False}
+        }
+    })
+
+@app.route('/api/info', methods=['GET'])
+def api_info():
+    return jsonify({
+        'name': 'HTTP Playground',
+        'version': '3.0.0',
+        'description': 'Production-grade educational API platform with 20 modules and 100+ endpoints',
+        'modules': list(MODULE_INFO.keys()),
+        'total_modules': len(MODULE_INFO),
+        'auth': {
+            'GET': 'Public — no authentication',
+            'POST': 'Public — no authentication (Deep Freeze: auto-deleted in 2h)',
+            'PUT': 'Standard API key required (nhk_ prefix, 15 requests)',
+            'DELETE': 'Standard API key required (nhk_ prefix, 15 requests)',
+            'AI': 'AI API key required (nai_ prefix, 3 requests total, no regeneration)'
+        },
+        'deep_freeze': {
+            'POST': 'Auto-deleted in 2 hours',
+            'PUT': 'Auto-reverted in 1 hour',
+            'DELETE': 'Auto-restored in 1 hour'
+        }
+    })
+
+@app.route('/api/echo', methods=['GET', 'POST', 'PUT', 'DELETE'])
+def echo():
+    return jsonify({
+        'method': request.method,
+        'url': request.url,
+        'headers': dict(request.headers),
+        'query_params': dict(request.args),
+        'body': request.get_json(silent=True),
+        'ip': request.remote_addr,
+        'timestamp': datetime.utcnow().isoformat()
+    })
+
+@app.route('/api/headers', methods=['GET'])
+def show_headers():
+    return jsonify({'headers': dict(request.headers), 'ip': request.remote_addr})
+
+@app.route('/api/status-codes', methods=['GET'])
+def status_codes():
+    codes = {
+        '200': 'OK — Request succeeded',
+        '201': 'Created — New resource created',
+        '204': 'No Content — Success, no response body',
+        '400': 'Bad Request — Invalid input',
+        '401': 'Unauthorized — Authentication required',
+        '403': 'Forbidden — Insufficient permissions',
+        '404': 'Not Found — Resource does not exist',
+        '405': 'Method Not Allowed',
+        '409': 'Conflict — Resource already exists',
+        '429': 'Too Many Requests — Rate limit exceeded',
+        '500': 'Internal Server Error'
+    }
+    return jsonify({'status_codes': codes})
+
+@app.route('/api/status-codes/<int:code>', methods=['GET'])
+def return_status_code(code):
+    """Return a specific HTTP status code for testing"""
+    if code < 100 or code > 599:
+        return jsonify({'error': 'Invalid status code'}), 400
+    return jsonify({'status_code': code, 'message': f'You requested HTTP {code}'}), code
+
+
+# ============ PAGE ROUTES ============
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -499,58 +523,66 @@ def admin_page():
 def docs_page():
     return render_template('docs.html')
 
-# Module pages — dedicated interactive page per module
-MODULE_INFO = {
-    'books': {'title': 'Library System', 'icon': '📚', 'endpoint': '/api/books', 'table': 'books'},
-    'menu': {'title': 'Restaurant Menu', 'icon': '🍽️', 'endpoint': '/api/menu', 'table': 'menu_items'},
-    'tasks': {'title': 'Task Manager', 'icon': '✅', 'endpoint': '/api/tasks', 'table': 'tasks'},
-    'students': {'title': 'Student Management', 'icon': '🎓', 'endpoint': '/api/students', 'table': 'students'},
-    'notes': {'title': 'Notes System', 'icon': '📝', 'endpoint': '/api/notes', 'table': 'notes'},
-    'files': {'title': 'File Manager', 'icon': '📁', 'endpoint': '/api/files', 'table': 'files'},
-    'blog': {'title': 'Blog Platform', 'icon': '✍️', 'endpoint': '/api/blog', 'table': 'blog_posts'},
-    'inventory': {'title': 'Inventory System', 'icon': '📦', 'endpoint': '/api/inventory', 'table': 'inventory'},
-    'weather': {'title': 'Weather API', 'icon': '🌤️', 'endpoint': '/api/weather', 'table': None},
-    'ai': {'title': 'AI Assistant', 'icon': '🤖', 'endpoint': '/api/ai', 'table': None},
-}
 
-@app.route('/module/<name>')
-def module_page(name):
-    if name not in MODULE_INFO:
-        return render_template('index.html'), 404
-    info = MODULE_INFO[name]
-    return render_template('module.html', module_name=name, module=info)
-
-
-# ============================================================
-# ERROR HANDLERS
-# ============================================================
+# ============ ERROR HANDLERS ============
 @app.errorhandler(404)
 def not_found(e):
     if request.path.startswith('/api/'):
-        return jsonify({'error': 'Endpoint not found', 'code': 404}), 404
+        return jsonify({'error': 'Endpoint not found', 'path': request.path}), 404
     return render_template('index.html'), 404
 
-@app.errorhandler(429)
-def rate_limited(e):
-    return jsonify({
-        'error': 'Rate limit exceeded',
-        'message': 'Too many requests. Please slow down.',
-        'code': 429
-    }), 429
+@app.errorhandler(405)
+def method_not_allowed(e):
+    return jsonify({'error': 'Method not allowed', 'method': request.method, 'path': request.path}), 405
 
 @app.errorhandler(413)
 def too_large(e):
-    return jsonify({'error': 'File too large. Maximum 2MB allowed.', 'code': 413}), 413
+    return jsonify({'error': 'Request too large (max 2MB)'}), 413
+
+@app.errorhandler(429)
+def rate_limited(e):
+    return jsonify({'error': 'Rate limit exceeded'}), 429
 
 @app.errorhandler(500)
 def server_error(e):
-    return jsonify({'error': 'Internal server error', 'code': 500}), 500
+    return jsonify({'error': 'Internal server error'}), 500
 
 
-# ============================================================
-# INITIALIZE
-# ============================================================
+# ============ DEEP FREEZE DAEMON ============
+def start_freeze_daemon():
+    from freeze import freeze_cleanup
+    t = threading.Thread(target=freeze_cleanup, daemon=True)
+    t.start()
+    print("🧊 Deep Freeze daemon started")
+
+
+# ============ INIT & RUN ============
+def create_superadmin():
+    """Create superadmin from env vars if not exists"""
+    username = os.getenv('SUPER_ADMIN_USERNAME')
+    password = os.getenv('SUPER_ADMIN_PASSWORD')
+    email = os.getenv('SUPER_ADMIN_EMAIL')
+    if not username or not password:
+        return
+    conn = get_db()
+    existing = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
+    if not existing:
+        pw_hash = hash_password(password)
+        conn.execute(
+            "INSERT INTO users (username, email, password_hash, role, status) VALUES (?, ?, ?, 'superadmin', 'approved')",
+            (username, email or f'{username}@admin.local', pw_hash)
+        )
+        user_id = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()[0]
+        conn.execute("INSERT INTO api_keys (user_id, key, key_type, max_requests) VALUES (?, ?, 'standard', ?)",
+                     (user_id, generate_api_key('standard'), 9999))
+        conn.execute("INSERT INTO api_keys (user_id, key, key_type, max_requests) VALUES (?, ?, 'ai', ?)",
+                     (user_id, generate_api_key('ai'), 9999))
+        conn.commit()
+    conn.close()
+
+
 init_db()
+create_superadmin()
 start_freeze_daemon()
 
 if __name__ == '__main__':

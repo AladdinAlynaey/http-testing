@@ -15,7 +15,11 @@ from datetime import datetime, timedelta
 from database import get_db
 
 # Module table names for reference
-MODULE_TABLES = ['books', 'menu_items', 'tasks', 'students', 'notes', 'files', 'blog_posts', 'inventory']
+MODULE_TABLES = [
+    'books', 'menu_items', 'tasks', 'students', 'notes', 'files', 'blog_posts', 'inventory',
+    'products', 'movies', 'recipes', 'events', 'contacts', 'songs', 'quotes', 'countries',
+    'jokes', 'vehicles', 'courses', 'pets'
+]
 
 # Table column definitions for restoration
 TABLE_COLUMNS = {
@@ -27,6 +31,18 @@ TABLE_COLUMNS = {
     'files': ['filename', 'original_name', 'file_type', 'file_size', 'uploaded_by'],
     'blog_posts': ['title', 'content', 'author', 'tags', 'is_published'],
     'inventory': ['name', 'sku', 'quantity', 'price', 'category', 'warehouse'],
+    'products': ['name', 'description', 'price', 'category', 'brand', 'rating', 'stock', 'image_url'],
+    'movies': ['title', 'director', 'genre', 'year', 'rating', 'runtime', 'language', 'plot'],
+    'recipes': ['title', 'description', 'cuisine', 'difficulty', 'prep_time', 'cook_time', 'servings', 'ingredients'],
+    'events': ['title', 'description', 'location', 'event_date', 'event_time', 'category', 'capacity', 'organizer'],
+    'contacts': ['first_name', 'last_name', 'email', 'phone', 'company', 'job_title', 'city', 'country'],
+    'songs': ['title', 'artist', 'album', 'genre', 'duration', 'year', 'explicit'],
+    'quotes': ['text', 'author', 'category', 'language'],
+    'countries': ['name', 'capital', 'continent', 'population', 'area_km2', 'currency', 'language'],
+    'jokes': ['setup', 'punchline', 'category', 'rating'],
+    'vehicles': ['make', 'model', 'year', 'type', 'color', 'price', 'fuel_type', 'mileage'],
+    'courses': ['title', 'instructor', 'category', 'level', 'duration_hours', 'price', 'rating', 'enrolled'],
+    'pets': ['name', 'species', 'breed', 'age', 'color', 'weight', 'shelter', 'adopted'],
 }
 
 

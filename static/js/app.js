@@ -1,6 +1,6 @@
 /**
- * HTTP Playground - Main JavaScript
- * Theme toggle, navigation, card rendering, API interactions
+ * HTTP Playground v3.0 — Main JavaScript
+ * 20 module cards, theme toggle, auth state, dual API key display
  */
 
 const API_BASE = '';
@@ -130,18 +130,30 @@ function showToast(message, type = 'info') {
     setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
 }
 
-// ============ MODULES DATA ============
+// ============ MODULES DATA (20 MODULES) ============
 const MODULES = [
-    { name: 'Library System', slug: 'books', icon: '📚', desc: 'Manage books with full CRUD operations. Search by genre, author, or title. Perfect for learning REST basics.', level: 'beginner', auth: 'None', path: '/api/books', color: '#6366f1' },
-    { name: 'Restaurant Menu', slug: 'menu', icon: '🍽️', desc: 'Create and manage restaurant menu items. Filter by category, update prices, and control availability.', level: 'beginner', auth: 'None', path: '/api/menu', color: '#ec4899' },
-    { name: 'Task Manager', slug: 'tasks', icon: '✅', desc: 'Organize tasks with priorities and status tracking. Learn about filtering, sorting, and state management.', level: 'beginner', auth: 'None', path: '/api/tasks', color: '#10b981' },
-    { name: 'Student Management', slug: 'students', icon: '🎓', desc: 'Manage student records with enrollment data and GPA tracking. Requires API key authentication.', level: 'intermediate', auth: 'API Key', path: '/api/students', color: '#f59e0b' },
-    { name: 'Notes System', slug: 'notes', icon: '📝', desc: 'Create, pin, and categorize notes. Learn about CRUD operations with additional features like pinning.', level: 'beginner', auth: 'None', path: '/api/notes', color: '#8b5cf6' },
-    { name: 'File Manager', slug: 'files', icon: '📁', desc: 'Upload and download files securely. Learn about multipart form data, file validation, and secure storage.', level: 'intermediate', auth: 'API Key', path: '/api/files', color: '#06b6d4' },
-    { name: 'Blog Platform', slug: 'blog', icon: '✍️', desc: 'Full blog system with posts, tags, and publishing control. Public read, API key required for writing.', level: 'beginner', auth: 'None / API Key', path: '/api/blog', color: '#f97316' },
-    { name: 'Inventory System', slug: 'inventory', icon: '📦', desc: 'Track inventory across warehouses. Monitor stock levels, manage SKUs, and filter by category.', level: 'intermediate', auth: 'API Key', path: '/api/inventory', color: '#14b8a6' },
-    { name: 'Weather API', slug: 'weather', icon: '🌤️', desc: 'Mock weather data for 10 cities worldwide. Compare temperatures between cities. Great for API practice.', level: 'beginner', auth: 'None', path: '/api/weather', color: '#3b82f6' },
-    { name: 'AI Assistant', slug: 'ai', icon: '🤖', desc: 'AI-powered text generation, summarization, classification, and validation using OpenRouter. Login required.', level: 'advanced', auth: 'Login', path: '/api/ai/*', color: '#ef4444' },
+    { name: 'Library System', slug: 'books', icon: '📚', desc: 'Full CRUD on books. Search by genre, author, title. 15 seed books with filtering and pagination.', level: 'beginner', auth: 'None', path: '/api/books', color: '#6366f1' },
+    { name: 'Restaurant Menu', slug: 'menu', icon: '🍽️', desc: 'Create and manage restaurant menu items. Filter by category, update prices, availability control.', level: 'beginner', auth: 'None', path: '/api/menu', color: '#ec4899' },
+    { name: 'Task Manager', slug: 'tasks', icon: '✅', desc: 'Organize tasks with priorities, status tracking, due dates, and assignees. Filter by status/priority.', level: 'beginner', auth: 'None', path: '/api/tasks', color: '#10b981' },
+    { name: 'Student Records', slug: 'students', icon: '🎓', desc: 'Student records with GPA, major, enrollment year. API key needed for PUT/DELETE.', level: 'intermediate', auth: 'API Key', path: '/api/students', color: '#f59e0b' },
+    { name: 'Notes System', slug: 'notes', icon: '📝', desc: 'Create, categorize, and pin notes. Filter by category, search content.', level: 'beginner', auth: 'None', path: '/api/notes', color: '#8b5cf6' },
+    { name: 'File Manager', slug: 'files', icon: '📁', desc: 'Upload & download files securely. Extension whitelist + magic byte validation + 2MB limit.', level: 'intermediate', auth: 'API Key', path: '/api/files', color: '#06b6d4' },
+    { name: 'Blog Platform', slug: 'blog', icon: '✍️', desc: 'Full blog with posts, tags, publishing control. Public read, API key for writing.', level: 'beginner', auth: 'None / Key', path: '/api/blog', color: '#f97316' },
+    { name: 'Inventory System', slug: 'inventory', icon: '📦', desc: 'Track stock, SKUs, warehouses, pricing. Low-stock API for monitoring.', level: 'intermediate', auth: 'API Key', path: '/api/inventory', color: '#14b8a6' },
+    { name: 'Product Store', slug: 'products', icon: '🛍️', desc: 'E-commerce products with brands, ratings, stock. Top-rated endpoint included.', level: 'beginner', auth: 'None', path: '/api/products', color: '#a855f7' },
+    { name: 'Movie Database', slug: 'movies', icon: '🎬', desc: 'Movies with directors, genres, ratings, runtimes. Top-rated + language filters.', level: 'beginner', auth: 'None', path: '/api/movies', color: '#e11d48' },
+    { name: 'Recipe Book', slug: 'recipes', icon: '🧑‍🍳', desc: 'Cooking recipes with ingredients, cuisine, difficulty, prep & cook times.', level: 'beginner', auth: 'None', path: '/api/recipes', color: '#ea580c' },
+    { name: 'Event Calendar', slug: 'events', icon: '📅', desc: 'Calendar events with dates, locations, capacity. Upcoming events endpoint.', level: 'beginner', auth: 'None', path: '/api/events', color: '#0284c7' },
+    { name: 'Address Book', slug: 'contacts', icon: '📇', desc: 'Contact management with company, job title, location. Search by company/country.', level: 'intermediate', auth: 'API Key', path: '/api/contacts', color: '#16a34a' },
+    { name: 'Music Library', slug: 'songs', icon: '🎵', desc: 'Songs with artists, albums, genres, durations. Filter by genre, year, explicit.', level: 'beginner', auth: 'None', path: '/api/songs', color: '#7c3aed' },
+    { name: 'Quotes Collection', slug: 'quotes', icon: '💬', desc: 'Inspirational quotes from famous people. Random quote endpoint included.', level: 'beginner', auth: 'None', path: '/api/quotes', color: '#0891b2' },
+    { name: 'World Countries', slug: 'countries', icon: '🌍', desc: 'Country data: capitals, populations, currencies, continents. By-continent grouping.', level: 'beginner', auth: 'None', path: '/api/countries', color: '#059669' },
+    { name: 'Joke API', slug: 'jokes', icon: '😂', desc: 'Programming jokes with setup/punchline. Random joke endpoint for quick laughs.', level: 'beginner', auth: 'None', path: '/api/jokes', color: '#d946ef' },
+    { name: 'Vehicle Market', slug: 'vehicles', icon: '🚗', desc: 'Cars & trucks with make, model, year, fuel type. Filter by type, color, fuel.', level: 'intermediate', auth: 'API Key', path: '/api/vehicles', color: '#dc2626' },
+    { name: 'Online Courses', slug: 'courses', icon: '🎓', desc: 'Course catalog with instructors, ratings, enrollment. Free courses + popular endpoints.', level: 'beginner', auth: 'None', path: '/api/courses', color: '#2563eb' },
+    { name: 'Pet Adoption', slug: 'pets', icon: '🐾', desc: 'Pet adoption: dogs, cats with breeds, ages, shelters. Available-for-adoption filter.', level: 'beginner', auth: 'None', path: '/api/pets', color: '#ca8a04' },
+    { name: 'Weather API', slug: 'weather', icon: '🌤️', desc: 'Mock weather for 12 cities. Compare temperatures, 5-day forecasts. Read-only.', level: 'beginner', auth: 'None', path: '/api/weather', color: '#3b82f6' },
+    { name: 'AI Assistant', slug: 'ai', icon: '🤖', desc: 'AI text generation, summarization, chat, classification via OpenRouter. Requires AI API key.', level: 'advanced', auth: 'AI Key', path: '/api/ai/*', color: '#ef4444' },
 ];
 
 // ============ RENDER CARDS ============
@@ -150,26 +162,28 @@ function renderModuleCards(filter = 'all') {
     if (!grid) return;
 
     const filtered = filter === 'all' ? MODULES : MODULES.filter(m => m.level === filter);
-    grid.innerHTML = filtered.map(m => `
-        <div class="card" onclick="window.location.href='/module/${m.slug}'">
-            <div class="card-image-placeholder" style="background:linear-gradient(135deg, ${m.color}22, ${m.color}11)">
+    grid.innerHTML = filtered.map(m => {
+        const isFeatured = m.slug === 'ai';
+        return `
+        <div class="card${isFeatured ? ' card-featured' : ''}" onclick="window.location.href='/module/${m.slug}'" style="--card-accent:${m.color};border:1px solid ${m.color}22">
+            <div class="card-image-placeholder" style="background:linear-gradient(135deg, ${m.color}20, ${m.color}08)">
                 <span>${m.icon}</span>
             </div>
             <div class="card-body">
                 <div class="card-title">${m.name}</div>
                 <div class="card-desc">${m.desc}</div>
                 <div class="card-meta">
-                    <span class="card-badge ${m.level}">${m.level}</span>
-                    <span class="card-badge auth-${m.auth === 'None' ? 'none' : m.auth === 'API Key' ? 'key' : 'login'}">
-                        ${m.auth === 'None' ? '🔓 Public' : m.auth === 'API Key' ? '🔑 API Key' : '🔐 Login'}
+                    <span class="card-badge ${m.level}">${m.level.toUpperCase()}</span>
+                    <span class="card-badge auth-${m.auth === 'None' ? 'none' : m.auth === 'AI Key' ? 'ai' : m.auth === 'API Key' ? 'key' : 'mixed'}">
+                        ${m.auth === 'None' ? '🔓 Public' : m.auth === 'API Key' ? '🔑 API Key' : m.auth === 'AI Key' ? '🤖 AI Key' : '🔓/🔑'}
                     </span>
-                    <span class="card-badge" style="background:var(--bg-glass);color:var(--text-secondary)">
+                    <span class="card-badge" style="background:var(--bg-glass);color:var(--text-secondary);font-family:'JetBrains Mono',monospace;font-size:.75rem">
                         ${m.path}
                     </span>
                 </div>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 
     const countEl = document.getElementById('modules-count');
     if (countEl) countEl.textContent = `${filtered.length} modules`;

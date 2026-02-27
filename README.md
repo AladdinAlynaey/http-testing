@@ -1,170 +1,172 @@
 <div align="center">
 
-# 🚀 HTTP Playground & API Training Platform v2.0
+# 🚀 HTTP Playground — The Ultimate API Training Platform
 
-**A production-grade educational platform for mastering HTTP, REST APIs, CURL, authentication, and API security — with real endpoints you can test instantly.**
+### Master HTTP, REST, CURL, Authentication & AI — with 100+ live endpoints
 
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://python.org)
-[![Flask](https://img.shields.io/badge/Flask-3.0+-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Live-22c55e)](https://n8nhttp.alaadin-alynaey.site)
-[![Version](https://img.shields.io/badge/Version-2.0.0-6366f1)](https://n8nhttp.alaadin-alynaey.site/api/health)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Flask](https://img.shields.io/badge/Flask-3.0+-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com)
+[![SQLite](https://img.shields.io/badge/SQLite-WAL_Mode-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org)
+[![License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
+[![Version](https://img.shields.io/badge/v3.0-Production-6366f1?style=for-the-badge)](https://n8nhttp.alaadin-alynaey.site)
+[![Status](https://img.shields.io/badge/Status-🟢_Live-22c55e?style=for-the-badge)](https://n8nhttp.alaadin-alynaey.site/api/health)
 
-**🌐 Live Demo:** [https://n8nhttp.alaadin-alynaey.site](https://n8nhttp.alaadin-alynaey.site)
+---
+
+**🌐 [Live Demo](https://n8nhttp.alaadin-alynaey.site)** &nbsp;·&nbsp; **📖 [Documentation](https://n8nhttp.alaadin-alynaey.site/docs)** &nbsp;·&nbsp; **⭐ [Star on GitHub](https://github.com/AladdinAlynaey/http-testing)**
+
+---
+
+*Zero setup. No API key needed. Open your terminal and go.*
 
 </div>
 
 ---
 
-## ⚡ Try It Right Now — No Setup Required
+## ⚡ Try It in 10 Seconds
 
 ```bash
-# Get all books
+# Fetch all books
 curl https://n8nhttp.alaadin-alynaey.site/api/books
 
-# Create a new book (public — no API key needed)
-curl -X POST https://n8nhttp.alaadin-alynaey.site/api/books \
+# Create a movie (no auth needed)
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/movies \
   -H "Content-Type: application/json" \
-  -d '{"title":"My First API Book","author":"You","genre":"Technology"}'
+  -d '{"title":"Inception","director":"Christopher Nolan","genre":"Sci-Fi","year":2010,"rating":8.8}'
 
-# Check the weather in Dubai
+# Get weather in Dubai
 curl "https://n8nhttp.alaadin-alynaey.site/api/weather?city=dubai"
 
-# Compare weather between cities
-curl "https://n8nhttp.alaadin-alynaey.site/api/weather/compare?city1=tokyo&city2=london"
-
-# Search for books
-curl "https://n8nhttp.alaadin-alynaey.site/api/books?search=python"
-
-# Get platform health status
-curl https://n8nhttp.alaadin-alynaey.site/api/health
+# Ask AI to explain REST
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"Explain REST APIs in 3 sentences"}'
 ```
 
-Every `GET` and `POST` endpoint is **100% public** — no API key, no registration, no setup. Just copy, paste, and learn.
+**Every `GET` and `POST` endpoint is 100% public.** No sign-up, no tokens, no rate walls. Just `curl` and learn.
 
 ---
 
 ## 📋 Table of Contents
 
+- [Why This Exists](#-why-this-exists)
 - [Features](#-features)
-- [Architecture](#-architecture)
-- [API Modules](#-api-modules-10-modules)
+- [All 22 Modules](#-all-22-modules)
 - [Deep Freeze System](#-deep-freeze-system)
-- [Authentication & API Keys](#-authentication--api-keys)
+- [Dual API Key System](#-dual-api-key-system)
 - [Security](#-security)
-- [Quick Start](#-quick-start-guide)
-- [CURL Examples](#-complete-curl-reference)
-- [Deployment](#-deployment)
+- [Architecture](#-architecture)
+- [Quick Start](#-quick-start)
+- [CURL Cheat Sheet](#-curl-cheat-sheet)
+- [Production Deployment](#-production-deployment)
 - [Tech Stack](#-tech-stack)
 - [Project Structure](#-project-structure)
+- [API Response Format](#-api-response-format)
 - [Contributing](#-contributing)
+
+---
+
+## 💡 Why This Exists
+
+Learning HTTP and APIs shouldn't require spinning up a server. **HTTP Playground** gives you:
+
+- ✅ **100+ live endpoints** you can hit right now
+- ✅ **20 real-world CRUD modules** (books, movies, recipes, pets, vehicles…)
+- ✅ **AI-powered endpoints** via OpenRouter (generate text, summarize, chat, classify)
+- ✅ **Self-healing data** — the Deep Freeze system auto-reverts any changes
+- ✅ **Dual API keys** — standard keys for CRUD, AI keys for AI endpoints
+- ✅ **Interactive module pages** with live data tables, forms, and CURL examples
+- ✅ **Dark/Light themes** with premium glassmorphism UI
+- ✅ **Bilingual** — full English & Arabic support with RTL
+
+Whether you're a student learning CURL, a developer testing n8n workflows, or a teacher setting up a classroom lab — this platform was built for you.
 
 ---
 
 ## 🎯 Features
 
-### 🧊 Deep Freeze Data Sandbox
-The platform uses a unique **Deep Freeze** system that keeps data pristine for all users:
+### 🧊 Deep Freeze — Self-Healing Data
 
-| Operation | What Happens | Auto-Revert Time |
-|-----------|-------------|-----------------|
-| `POST` | Creates a new record (tagged as user-created) | **Auto-deleted after 2 hours** |
-| `PUT` | Updates a record (original is snapshot-saved) | **Auto-reverted after 1 hour** |
-| `DELETE` | Soft-deletes a record (marked for restoration) | **Auto-restored after 1 hour** |
+Your changes are always temporary. The database auto-reverts to a clean state.
 
-- A background daemon checks every 60 seconds and reverts expired changes
-- **Frozen baseline data** (seed data) is permanent and protected
-- Every user's changes are isolated and temporary — the database always returns to its clean state
+| You Do | What Happens | Auto-Revert |
+|--------|-------------|-------------|
+| `POST` | Record tagged as user-created | **Deleted after 2 hours** |
+| `PUT` | Original state snapshot saved | **Reverted after 1 hour** |
+| `DELETE` | Record soft-deleted | **Restored after 1 hour** |
 
-### 🔑 API Key Usage Tracking
-Each API key has a **20-request limit** for PUT/DELETE operations:
-- `X-API-Requests-Remaining` header on every authenticated response
-- `X-API-Requests-Max` header shows total allowed
-- Keys auto-deactivate when exhausted
-- One-click key regeneration at `POST /api/auth/regenerate-key`
+> A background daemon checks every 60 seconds. Seed data (100+ records) is permanently frozen.
+
+### 🔑 Dual API Key System
+
+| Key Type | Purpose | How to Get |
+|----------|---------|-----------|
+| **Standard Key** (`nhk_...`) | PUT/DELETE on CRUD modules | Register + Admin approval |
+| **AI Key** (`nhai_...`) | AI endpoints (generate, chat, summarize) | Same account, separate key |
+
+Each key has **20 requests**. Exhausted? Regenerate with one API call.
 
 ### 📊 Interactive Module Pages
-Each of the 10 modules has its own **dedicated interactive page** at `/module/<name>`:
-- **Live data table** with frozen/user-created badges
-- **Create form** (public — no API key needed)
-- **Update & Delete forms** with API key input
-- **Copy-paste CURL examples** for every HTTP method
-- **Real-time response viewer** showing JSON responses
-- **Toast notifications** for success/error feedback
 
-### 🔒 Enterprise-Grade Security
-- **File upload validation**: Extension whitelist + magic byte verification + 2MB limit
-- **Input sanitization**: `bleach` HTML stripping + length limits
-- **Rate limiting**: 200 req/min general, 10/min login, 5/min registration
-- **Security headers**: CSP, HSTS, X-Frame-Options, X-Content-Type-Options
-- **SQL injection prevention**: 100% parameterized queries
-- **Account lockout**: After 5 failed login attempts
+Every module at `/module/<name>` features:
+- Live data table with frozen/user badges
+- Create, Update, Delete forms
+- Copy-paste CURL examples for every method
+- Real-time JSON response viewer
+- Toast notifications
 
-### 🌐 Bilingual Support
-Full **English & Arabic** support with automatic RTL layout switching.
+### 🌐 Premium UI
 
----
+- **Dark/Light mode** with smooth transitions
+- **Glassmorphism** cards with accent-colored hover glow
+- **Custom-styled dropdowns** (no ugly OS selects)
+- **Fixed footer** with quick links
+- **Responsive** — works on mobile, tablet, desktop
 
-## 🏗 Architecture
+### 🌍 Bilingual Support
 
-```
-┌──────────────────────────────────────────────────────────┐
-│                    HTTP Playground v2.0                  │
-├──────────────────────────────────────────────────────────┤
-│                                                          │
-│  ┌─────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
-│  │ Flask   │  │ Gunicorn │  │  PM2     │  │  Nginx   │   │
-│  │ App     │──│ WSGI     │──│ Process  │──│ Reverse  │   │
-│  │         │  │ Server   │  │ Manager  │  │ Proxy    │   │
-│  └────┬────┘  └──────────┘  └──────────┘  └──────────┘   │
-│       │                                                  │
-│  ┌────┴────────────────────────────────────────┐         │
-│  │              Core Modules                   │         │
-│  │                                             │         │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐   │         │
-│  │  │ modules  │  │   auth   │  │ freeze   │   │         │
-│  │  │ .py      │  │   .py    │  │ .py      │   │         │
-│  │  │ 10 APIs  │  │ JWT/Keys │  │ Daemon   │   │         │
-│  │  └──────────┘  └──────────┘  └──────────┘   │         │
-│  │                                             │         │
-│  │  ┌──────────┐  ┌──────────┐                 │         │
-│  │  │database  │  │   AI     │                 │         │
-│  │  │.py       │  │OpenRouter│                 │         │
-│  │  │SQLite    │  │  API     │                 │         │
-│  │  └──────────┘  └──────────┘                 │         │
-│  └─────────────────────────────────────────────┘         │
-│                                                          │
-└──────────────────────────────────────────────────────────┘
-```
+Full English & Arabic (عربي) with automatic RTL layout switching.
 
 ---
 
-## 📦 API Modules (10 Modules)
+## 📦 All 22 Modules
 
-### Beginner Level — No Authentication Required
+### 🟢 Beginner — No Authentication
 
-| Module | Endpoint | Description |
-|--------|----------|-------------|
-| 📚 **Library System** | `/api/books` | Full CRUD on books. Search, filter by genre, author, year. 15 seed books. |
-| 🍽️ **Restaurant Menu** | `/api/menu` | Manage menu items with categories, prices, availability. 15 seed items. |
-| ✅ **Task Manager** | `/api/tasks` | Organize with priority, status, due dates, assignments. 12 seed tasks. |
-| 📝 **Notes System** | `/api/notes` | Create, categorize, and pin notes. 8 seed notes. |
-| ✍️ **Blog Platform** | `/api/blog` | Posts with tags, publishing workflow. 6 seed posts. |
-| 🌤️ **Weather API** | `/api/weather` | Mock weather for 10 cities. Compare temperatures. Read-only. |
+| # | Module | Endpoint | Description |
+|---|--------|----------|-------------|
+| 1 | 📚 **Library System** | `/api/books` | Books with genre, author, year. Search & filter. 15 seed records. |
+| 2 | 🍽️ **Restaurant Menu** | `/api/menu` | Menu items with categories, prices, availability. 15 seed records. |
+| 3 | ✅ **Task Manager** | `/api/tasks` | Tasks with priority, status, due dates. 12 seed records. |
+| 4 | 📝 **Notes** | `/api/notes` | Create, categorize, pin notes. 8 seed records. |
+| 5 | ✍️ **Blog Platform** | `/api/blog` | Posts with tags and publishing workflow. 6 seed records. |
+| 6 | 🛍️ **Product Store** | `/api/products` | E-commerce products with brands, ratings, stock. |
+| 7 | 🎬 **Movie Database** | `/api/movies` | Movies with directors, genres, ratings, runtime. |
+| 8 | 🧑‍🍳 **Recipe Book** | `/api/recipes` | Recipes with cuisine, difficulty, prep & cook times. |
+| 9 | 📅 **Event Calendar** | `/api/events` | Events with dates, locations, capacity. |
+| 10 | 📇 **Address Book** | `/api/contacts` | Contacts with company, job title, location. |
+| 11 | 🎵 **Music Library** | `/api/songs` | Songs with artists, albums, genres, durations. |
+| 12 | 💬 **Quotes** | `/api/quotes` | Inspirational quotes with random endpoint. |
+| 13 | 🌍 **World Countries** | `/api/countries` | Country data with capitals, populations, currencies. |
+| 14 | 😂 **Joke API** | `/api/jokes` | Programming jokes with setup/punchline. |
+| 15 | 🚗 **Vehicle Market** | `/api/vehicles` | Cars with make, model, year, fuel type. |
+| 16 | 🎓 **Online Courses** | `/api/courses` | Courses with instructors, ratings, enrollment. |
+| 17 | 🐾 **Pet Adoption** | `/api/pets` | Pets with breeds, ages, shelters, availability. |
 
-### Intermediate Level — API Key for PUT/DELETE
+### 🟡 Intermediate — API Key for PUT/DELETE
 
-| Module | Endpoint | Description |
-|--------|----------|-------------|
-| 🎓 **Student Management** | `/api/students` | Student records with GPA, major, enrollment year. 10 seed students. |
-| 📁 **File Manager** | `/api/files` | Secure file upload/download. Extension & magic byte validation. |
-| 📦 **Inventory System** | `/api/inventory` | Track stock, SKUs, warehouses, pricing. 12 seed items. |
+| # | Module | Endpoint | Description |
+|---|--------|----------|-------------|
+| 18 | 🎓 **Student Management** | `/api/students` | Student records with GPA, major, enrollment year. |
+| 19 | 📁 **File Manager** | `/api/files` | Secure file upload/download with magic byte validation. |
+| 20 | 📦 **Inventory System** | `/api/inventory` | Stock tracking with SKUs, warehouses, pricing. |
 
-### Advanced Level — Login Required
+### 🔴 Advanced — Special Access
 
-| Module | Endpoint | Description |
-|--------|----------|-------------|
-| 🤖 **AI Assistant** | `/api/ai/*` | Text generation, summarization, classification, chat via OpenRouter. |
+| # | Module | Endpoint | Description |
+|---|--------|----------|-------------|
+| 21 | 🌤️ **Weather API** | `/api/weather` | Mock weather for 10 cities. Compare temperatures. Read-only. |
+| 22 | 🤖 **AI Assistant** | `/api/ai/*` | Text generation, summarization, classification, chat via OpenRouter. AI Key required. |
 
 ---
 
@@ -172,14 +174,12 @@ Full **English & Arabic** support with automatic RTL layout switching.
 
 ### How It Works
 
-The Deep Freeze system ensures the platform always returns to a clean state, making it safe for educational use:
-
 ```
 User creates a book (POST)
   └── Record tagged: created_by_user=true, expires_at=now+2h
   └── After 2 hours → Record automatically deleted
 
-User updates a book (PUT)  
+User updates a book (PUT)
   └── Original state snapshot saved in user_modifications table
   └── After 1 hour → Record automatically reverted to original
 
@@ -188,105 +188,117 @@ User deletes a book (DELETE)
   └── After 1 hour → Record automatically restored
 ```
 
-### Freeze Daemon Process
+### Freeze Daemon
+
+A background thread runs every 60 seconds:
 
 ```python
-# Background thread runs every 60 seconds
 while True:
-    # Find expired modifications
     expired = get_expired_modifications()
-    
     for mod in expired:
-        if mod.action == 'create':
-            delete_user_created_record(mod)
-        elif mod.action == 'update':
-            revert_to_original_snapshot(mod)
-        elif mod.action == 'delete':
-            restore_deleted_record(mod)
-    
+        if mod.action == 'create':   delete_user_created_record(mod)
+        elif mod.action == 'update': revert_to_original_snapshot(mod)
+        elif mod.action == 'delete': restore_deleted_record(mod)
     time.sleep(60)
 ```
 
-### Frozen Baseline Data
-
-Seed data (78+ records) is marked as `is_frozen=1` — these records are **permanent** and cannot be deleted. Superadmins can freeze additional records via `POST /api/<module>/freeze/<id>`.
+All 20 CRUD module tables are covered by freeze. Seed data is marked `is_frozen=1` and cannot be permanently deleted.
 
 ---
 
-## 🔑 Authentication & API Keys
+## 🔑 Dual API Key System
 
-### Access Levels
+### Access Matrix
 
-| Operation | Authentication | Details |
-|-----------|---------------|---------|
-| `GET` | ❌ None | All GET endpoints are fully public |
-| `POST` | ❌ None | Create records freely (auto-deleted after 2h) |
-| `PUT` | ✅ API Key | `X-API-Key` header required |
-| `DELETE` | ✅ API Key | `X-API-Key` header required |
-| AI Endpoints | ✅ Login (JWT) | Bearer token authentication |
+| Operation | Auth Required | Details |
+|-----------|:------------:|---------|
+| `GET` | ❌ | All GET endpoints are fully public |
+| `POST` | ❌ | Create records freely (auto-deleted after 2h) |
+| `PUT` | 🔑 Standard Key | `X-API-Key` header required |
+| `DELETE` | 🔑 Standard Key | `X-API-Key` header required |
+| AI Endpoints | 🤖 AI Key | `X-AI-Key` header required |
 
-### Getting an API Key
-
-1. **Register** at `/register` (or via `POST /api/auth/register`)
-2. **Wait for admin approval** (accounts are manually reviewed)
-3. **Login** at `/login` — your API key is returned in the response
-4. **Use the key** in the `X-API-Key` header for PUT/DELETE requests
-
-### API Key Endpoints
+### Getting Your Keys
 
 ```bash
-# Check your key status
+# 1. Register
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"student1","password":"SecurePass123!","email":"you@example.com"}'
+
+# 2. Login (returns both keys)
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"student1","password":"SecurePass123!"}'
+
+# 3. Check key status
 curl https://n8nhttp.alaadin-alynaey.site/api/auth/key-status \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 
-# Regenerate your key (20 fresh requests)
+# 4. Regenerate key (20 fresh requests)
 curl -X POST https://n8nhttp.alaadin-alynaey.site/api/auth/regenerate-key \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
-### Usage Limits
+### Usage Tracking Headers
 
-- **20 requests** per API key (PUT/DELETE operations)
-- Key auto-deactivates when exhausted
-- Response headers show remaining count:
-  ```
-  X-API-Requests-Remaining: 15
-  X-API-Requests-Max: 20
-  ```
+Every authenticated response includes:
+```
+X-API-Requests-Remaining: 15
+X-API-Requests-Max: 20
+```
 
 ---
 
 ## 🔒 Security
 
-### File Upload Protection
+| Layer | Implementation |
+|-------|---------------|
+| **File Uploads** | Extension whitelist + magic byte verification + 2MB limit |
+| **Input Sanitization** | `bleach.clean()` HTML stripping + length limits |
+| **Rate Limiting** | 200/min general, 10/min login, 5/min registration |
+| **Security Headers** | CSP, HSTS, X-Frame-Options, X-Content-Type-Options |
+| **SQL Injection** | 100% parameterized queries — zero risk |
+| **Account Lockout** | 5 failed attempts → temporary lock |
+| **CORS** | Configurable allowed origins |
+| **JWT** | Access + refresh token rotation |
 
-| Check | Details |
-|-------|---------|
-| Extension Whitelist | `.txt`, `.csv`, `.json`, `.xml`, `.pdf`, `.png`, `.jpg`, `.gif` |
-| Magic Byte Validation | File content verified against declared extension |
-| Size Limit | Maximum 2MB per file |
-| Filename Sanitization | Werkzeug `secure_filename` + length limit |
+---
 
-### Input Validation
-
-- All text inputs sanitized with `bleach.clean()` (HTML tags stripped)
-- Field length limits: 500 characters (standard), 5000 characters (content fields)
-- 100% parameterized SQL queries — zero injection risk
-
-### Security Headers
+## 🏗 Architecture
 
 ```
-X-Content-Type-Options: nosniff
-X-Frame-Options: DENY
-X-XSS-Protection: 1; mode=block
-Strict-Transport-Security: max-age=31536000; includeSubDomains
-Referrer-Policy: strict-origin-when-cross-origin
-Content-Security-Policy: [full CSP policy]
+┌─────────────────────────────────────────────────────────────┐
+│                   HTTP Playground v3.0                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐     │
+│  │  Flask   │  │ Gunicorn │  │   PM2    │  │  Nginx   │     │
+│  │  App     │──│  WSGI    │──│ Process  │──│ Reverse  │     │
+│  │ (Python) │  │  Server  │  │ Manager  │  │  Proxy   │     │
+│  └────┬─────┘  └──────────┘  └──────────┘  └──────────┘     │
+│       │                                                     │
+│  ┌────┴─────────────────────────────────────────────┐       │
+│  │                 Core Modules                     │       │
+│  │                                                  │       │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐        │       │
+│  │  │modules.py│  │  auth.py │  │freeze.py │        │       │
+│  │  │ 20 APIs  │  │JWT + Keys│  │ Daemon   │        │       │
+│  │  └──────────┘  └──────────┘  └──────────┘        │       │
+│  │                                                  │       │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐        │       │
+│  │  │database  │  │    AI    │  │ weather  │        │       │
+│  │  │  .py     │  │OpenRouter│  │  .py     │        │       │
+│  │  │ SQLite   │  │  API     │  │ 10 cities│        │       │
+│  │  └──────────┘  └──────────┘  └──────────┘        │       │
+│  └──────────────────────────────────────────────────┘       │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🚀 Quick Start Guide
+## 🚀 Quick Start
 
 ### Prerequisites
 
@@ -296,18 +308,18 @@ Content-Security-Policy: [full CSP policy]
 ### Local Setup
 
 ```bash
-# Clone the repository
+# Clone
 git clone https://github.com/AladdinAlynaey/http-testing.git
 cd http-testing
 
-# Create virtual environment
+# Virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Create .env file
+# Configure environment
 cat > .env << 'EOF'
 JWT_SECRET_KEY=your-secret-key-here
 OPENROUTER_API_KEY=your-openrouter-key-here
@@ -317,181 +329,236 @@ SUPER_ADMIN_EMAIL=admin@example.com
 SERVER_PORT=5050
 EOF
 
-# Run the application
+# Run
 python3 app.py
 ```
 
-The app starts at `http://localhost:5050` with the database auto-initialized and seeded with 78+ records.
-
-### Production Deployment with PM2
-
-```bash
-# Install gunicorn
-pip install gunicorn
-
-# Create PM2 ecosystem file
-cat > ecosystem.config.js << 'EOF'
-module.exports = {
-  apps: [{
-    name: "n8nhttp",
-    script: "venv/bin/gunicorn",
-    args: "-w 4 -b 127.0.0.1:5050 app:app --timeout 120",
-    cwd: "/path/to/http-testing",
-    env: { PYTHONPATH: "." }
-  }]
-};
-EOF
-
-# Start with PM2
-pm2 start ecosystem.config.js
-pm2 save
-pm2 startup
-```
+App starts at `http://localhost:5050` with database auto-initialized and seeded with 100+ records across 20 tables.
 
 ---
 
-## 📋 Complete CURL Reference
+## 📋 CURL Cheat Sheet
 
-### 📚 Books API
+<details>
+<summary><strong>📚 Books API</strong></summary>
 
 ```bash
-# List all books
 curl https://n8nhttp.alaadin-alynaey.site/api/books
-
-# Get single book
 curl https://n8nhttp.alaadin-alynaey.site/api/books/1
-
-# Search books by title or author
 curl "https://n8nhttp.alaadin-alynaey.site/api/books?search=python"
-
-# Filter by genre
 curl "https://n8nhttp.alaadin-alynaey.site/api/books?genre=Fiction"
 
-# Create a book (public)
 curl -X POST https://n8nhttp.alaadin-alynaey.site/api/books \
   -H "Content-Type: application/json" \
   -d '{"title":"Clean Code","author":"Robert Martin","genre":"Technology","year":2008}'
 
-# Update a book (API key required)
 curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/books/1 \
+  -H "X-API-Key: nhk_your_key" \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: nhk_your_key_here" \
-  -d '{"title":"Updated Title","year":2026}'
+  -d '{"title":"Updated Title"}'
 
-# Delete a book (API key required)
 curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/books/1 \
-  -H "X-API-Key: nhk_your_key_here"
+  -H "X-API-Key: nhk_your_key"
 ```
+</details>
 
-### 🍽️ Menu API
+<details>
+<summary><strong>🍽️ Menu API</strong></summary>
 
 ```bash
-# All menu items
 curl https://n8nhttp.alaadin-alynaey.site/api/menu
-
-# Filter by category
 curl "https://n8nhttp.alaadin-alynaey.site/api/menu?category=Main Course"
 
-# Create menu item
 curl -X POST https://n8nhttp.alaadin-alynaey.site/api/menu \
   -H "Content-Type: application/json" \
-  -d '{"name":"Grilled Salmon","price":24.99,"category":"Main Course","description":"Fresh Atlantic salmon"}'
+  -d '{"name":"Grilled Salmon","price":24.99,"category":"Main Course"}'
 ```
+</details>
 
-### ✅ Tasks API
+<details>
+<summary><strong>✅ Tasks API</strong></summary>
 
 ```bash
-# All tasks
 curl https://n8nhttp.alaadin-alynaey.site/api/tasks
-
-# Filter by status
 curl "https://n8nhttp.alaadin-alynaey.site/api/tasks?status=pending"
-
-# Filter by priority
 curl "https://n8nhttp.alaadin-alynaey.site/api/tasks?priority=high"
 
-# Create a task
 curl -X POST https://n8nhttp.alaadin-alynaey.site/api/tasks \
   -H "Content-Type: application/json" \
-  -d '{"title":"Learn REST APIs","priority":"high","status":"pending","assigned_to":"Student"}'
+  -d '{"title":"Learn REST APIs","priority":"high","status":"pending"}'
 ```
+</details>
 
-### 🎓 Students API
+<details>
+<summary><strong>🛍️ Products API</strong></summary>
 
 ```bash
-# All students
-curl https://n8nhttp.alaadin-alynaey.site/api/students
+curl https://n8nhttp.alaadin-alynaey.site/api/products
 
-# Filter by major
-curl "https://n8nhttp.alaadin-alynaey.site/api/students?major=Computer Science"
-
-# Create student
-curl -X POST https://n8nhttp.alaadin-alynaey.site/api/students \
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/products \
   -H "Content-Type: application/json" \
-  -d '{"name":"Jane Smith","email":"jane@uni.edu","major":"Data Science","gpa":3.8}'
+  -d '{"name":"Wireless Headphones","brand":"TechCo","price":79.99,"category":"Electronics"}'
 ```
+</details>
 
-### 📝 Notes API
+<details>
+<summary><strong>🎬 Movies API</strong></summary>
 
 ```bash
-curl https://n8nhttp.alaadin-alynaey.site/api/notes
+curl https://n8nhttp.alaadin-alynaey.site/api/movies
+curl "https://n8nhttp.alaadin-alynaey.site/api/movies?genre=Action"
 
-curl -X POST https://n8nhttp.alaadin-alynaey.site/api/notes \
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/movies \
   -H "Content-Type: application/json" \
-  -d '{"title":"API Notes","content":"REST uses HTTP methods","category":"Learning"}'
+  -d '{"title":"Interstellar","director":"Christopher Nolan","genre":"Sci-Fi","year":2014,"rating":8.6}'
 ```
+</details>
 
-### ✍️ Blog API
+<details>
+<summary><strong>🧑‍🍳 Recipes API</strong></summary>
 
 ```bash
-curl https://n8nhttp.alaadin-alynaey.site/api/blog
+curl https://n8nhttp.alaadin-alynaey.site/api/recipes
+curl "https://n8nhttp.alaadin-alynaey.site/api/recipes?cuisine=Italian"
 
-curl -X POST https://n8nhttp.alaadin-alynaey.site/api/blog \
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/recipes \
   -H "Content-Type: application/json" \
-  -d '{"title":"My First Post","content":"Hello World!","author":"Me","tags":"api,learning"}'
+  -d '{"name":"Chicken Shawarma","cuisine":"Middle Eastern","difficulty":"Medium","prep_time":30}'
 ```
+</details>
 
-### 📦 Inventory API
+<details>
+<summary><strong>📅 Events API</strong></summary>
 
 ```bash
-curl https://n8nhttp.alaadin-alynaey.site/api/inventory
+curl https://n8nhttp.alaadin-alynaey.site/api/events
 
-# Low stock items
-curl "https://n8nhttp.alaadin-alynaey.site/api/inventory?low_stock=true"
-
-curl -X POST https://n8nhttp.alaadin-alynaey.site/api/inventory \
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/events \
   -H "Content-Type: application/json" \
-  -d '{"name":"USB-C Cable","sku":"CABLE-001","quantity":200,"price":9.99,"category":"Electronics"}'
+  -d '{"title":"Tech Meetup","date":"2026-04-01","location":"Dubai","capacity":100}'
 ```
+</details>
 
-### 🌤️ Weather API
+<details>
+<summary><strong>📇 Contacts API</strong></summary>
 
 ```bash
-# All cities
+curl https://n8nhttp.alaadin-alynaey.site/api/contacts
+
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/contacts \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Sara Ahmed","email":"sara@example.com","company":"TechCorp","job_title":"Engineer"}'
+```
+</details>
+
+<details>
+<summary><strong>🎵 Songs API</strong></summary>
+
+```bash
+curl https://n8nhttp.alaadin-alynaey.site/api/songs
+
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/songs \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Blinding Lights","artist":"The Weeknd","album":"After Hours","genre":"Pop"}'
+```
+</details>
+
+<details>
+<summary><strong>💬 Quotes API</strong></summary>
+
+```bash
+curl https://n8nhttp.alaadin-alynaey.site/api/quotes
+
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/quotes \
+  -H "Content-Type: application/json" \
+  -d '{"quote":"The only way to do great work is to love what you do.","author":"Steve Jobs"}'
+```
+</details>
+
+<details>
+<summary><strong>🌍 Countries API</strong></summary>
+
+```bash
+curl https://n8nhttp.alaadin-alynaey.site/api/countries
+curl "https://n8nhttp.alaadin-alynaey.site/api/countries?continent=Asia"
+```
+</details>
+
+<details>
+<summary><strong>😂 Jokes API</strong></summary>
+
+```bash
+curl https://n8nhttp.alaadin-alynaey.site/api/jokes
+
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/jokes \
+  -H "Content-Type: application/json" \
+  -d '{"setup":"Why do programmers prefer dark mode?","punchline":"Because light attracts bugs!"}'
+```
+</details>
+
+<details>
+<summary><strong>🚗 Vehicles API</strong></summary>
+
+```bash
+curl https://n8nhttp.alaadin-alynaey.site/api/vehicles
+curl "https://n8nhttp.alaadin-alynaey.site/api/vehicles?fuel_type=Electric"
+
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/vehicles \
+  -H "Content-Type: application/json" \
+  -d '{"make":"Tesla","model":"Model 3","year":2026,"color":"White","fuel_type":"Electric"}'
+```
+</details>
+
+<details>
+<summary><strong>🎓 Courses API</strong></summary>
+
+```bash
+curl https://n8nhttp.alaadin-alynaey.site/api/courses
+
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/courses \
+  -H "Content-Type: application/json" \
+  -d '{"title":"REST API Mastery","instructor":"Alaadin","category":"Web Development","price":0}'
+```
+</details>
+
+<details>
+<summary><strong>🐾 Pets API</strong></summary>
+
+```bash
+curl https://n8nhttp.alaadin-alynaey.site/api/pets
+curl "https://n8nhttp.alaadin-alynaey.site/api/pets?available=true"
+
+curl -X POST https://n8nhttp.alaadin-alynaey.site/api/pets \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Luna","species":"Cat","breed":"Persian","age":2,"shelter":"Happy Paws","available":true}'
+```
+</details>
+
+<details>
+<summary><strong>🌤️ Weather API</strong></summary>
+
+```bash
 curl https://n8nhttp.alaadin-alynaey.site/api/weather
-
-# Specific city
 curl "https://n8nhttp.alaadin-alynaey.site/api/weather?city=dubai"
-
-# Compare two cities
 curl "https://n8nhttp.alaadin-alynaey.site/api/weather/compare?city1=tokyo&city2=london"
 ```
+</details>
 
-### 📁 File Upload
+<details>
+<summary><strong>📁 File Upload</strong></summary>
 
 ```bash
-# List files
 curl https://n8nhttp.alaadin-alynaey.site/api/files
 
-# Upload a file (max 2MB, allowed: txt,csv,json,xml,pdf,png,jpg,gif)
 curl -X POST https://n8nhttp.alaadin-alynaey.site/api/files/upload \
   -F "file=@document.txt"
 
-# Download a file
 curl https://n8nhttp.alaadin-alynaey.site/api/files/download/1 -O
 ```
+</details>
 
-### 🤖 AI Assistant
+<details>
+<summary><strong>🤖 AI Assistant</strong></summary>
 
 ```bash
 # Generate text
@@ -514,24 +581,62 @@ curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/classify \
   -H "Content-Type: application/json" \
   -d '{"text":"Great product!","categories":["positive","negative","neutral"]}'
 ```
+</details>
 
-### 🛠️ Utility Endpoints
+<details>
+<summary><strong>🛠️ Utility Endpoints</strong></summary>
 
 ```bash
-# Health check
 curl https://n8nhttp.alaadin-alynaey.site/api/health
-
-# Platform info
 curl https://n8nhttp.alaadin-alynaey.site/api/info
-
-# Echo (see your own request)
 curl https://n8nhttp.alaadin-alynaey.site/api/echo
-
-# See your headers
 curl https://n8nhttp.alaadin-alynaey.site/api/headers
-
-# HTTP status codes
 curl https://n8nhttp.alaadin-alynaey.site/api/status-codes
+```
+</details>
+
+---
+
+## 🚢 Production Deployment
+
+### With PM2 + Gunicorn + Nginx
+
+```bash
+# Install Gunicorn
+pip install gunicorn
+
+# PM2 ecosystem
+cat > ecosystem.config.js << 'EOF'
+module.exports = {
+  apps: [{
+    name: "n8nhttp",
+    script: "venv/bin/gunicorn",
+    args: "-w 4 -b 127.0.0.1:5050 app:app --timeout 120",
+    cwd: "/path/to/http-testing",
+    env: { PYTHONPATH: "." }
+  }]
+};
+EOF
+
+pm2 start ecosystem.config.js
+pm2 save
+pm2 startup
+```
+
+### Nginx Configuration
+
+```nginx
+server {
+    server_name n8nhttp.yourdomain.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:5050;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
 ```
 
 ---
@@ -541,14 +646,14 @@ curl https://n8nhttp.alaadin-alynaey.site/api/status-codes
 | Component | Technology |
 |-----------|-----------|
 | **Backend** | Python 3.10+, Flask 3.0 |
-| **Database** | SQLite (WAL mode, foreign keys) |
-| **WSGI Server** | Gunicorn (4 workers) |
+| **Database** | SQLite (WAL mode, foreign keys, 20 tables) |
+| **WSGI** | Gunicorn (4 workers) |
 | **Process Manager** | PM2 |
 | **Reverse Proxy** | Nginx |
-| **AI Provider** | OpenRouter API |
-| **Auth** | JWT (access + refresh tokens) + API Keys |
-| **Security** | bleach, werkzeug, CORS, CSP headers |
-| **Frontend** | Vanilla HTML/CSS/JS (no frameworks) |
+| **AI** | OpenRouter API (GPT/Claude/Llama) |
+| **Auth** | JWT (access + refresh) + Dual API Keys |
+| **Security** | bleach, werkzeug, CORS, CSP, HSTS |
+| **Frontend** | Vanilla HTML/CSS/JS — no frameworks |
 | **i18n** | Custom EN/AR with RTL support |
 
 ---
@@ -557,48 +662,60 @@ curl https://n8nhttp.alaadin-alynaey.site/api/status-codes
 
 ```
 http-testing/
-├── app.py               # Main Flask application, routes, middleware
-├── database.py          # SQLite schema, migrations, seed data (78+ records)
-├── auth.py              # JWT auth, API key management, usage tracking
-├── modules.py           # All 10 API module endpoints + file security
-├── freeze.py            # Deep Freeze daemon (auto-revert background thread)
-├── requirements.txt     # Python dependencies
-├── .env                 # Environment variables (not in repo)
-├── ecosystem.config.js  # PM2 configuration
+├── app.py                # Flask app, routes, middleware, security headers
+├── database.py           # SQLite schema, migrations, 100+ seed records
+├── auth.py               # JWT auth, dual API key system, usage tracking
+├── modules.py            # 20 CRUD API modules + file upload security
+├── freeze.py             # Deep Freeze daemon (auto-revert for all 20 tables)
+├── requirements.txt      # Python dependencies
+├── .env                  # Environment variables (not in repo)
+├── ecosystem.config.js   # PM2 configuration
 ├── templates/
-│   ├── index.html       # Homepage with module cards
-│   ├── module.html      # Interactive module page template
-│   ├── login.html       # Login form
-│   ├── register.html    # Registration form
-│   ├── admin.html       # Admin dashboard
-│   └── docs.html        # API documentation
+│   ├── index.html        # Homepage with 22 module cards
+│   ├── module.html       # Interactive module page template
+│   ├── docs.html         # Full API documentation
+│   ├── login.html        # Premium login form
+│   ├── register.html     # Premium registration form
+│   └── admin.html        # Admin dashboard
 ├── static/
-│   ├── css/
-│   │   └── style.css    # Full CSS with dark/light themes
+│   ├── css/style.css     # Design system (dark/light, glassmorphism)
 │   ├── js/
-│   │   ├── app.js       # Main JavaScript (cards, auth, theme)
-│   │   └── i18n.js      # Translations engine (EN/AR)
+│   │   ├── app.js        # Card rendering, auth, theme, filters
+│   │   ├── module-config.js  # Module field configs & CURL templates
+│   │   └── i18n.js       # EN/AR translation engine
 │   └── images/
-│       └── http.png     # Platform favicon/logo
-└── uploads/             # File upload directory (gitignored)
+└── uploads/              # File upload directory (gitignored)
 ```
 
 ---
 
-## 🌍 API Response Format
+## 📊 API Response Format
 
-All endpoints return consistent JSON:
+### Success
 
 ```json
 {
-  "data": [...],           // Array of records (GET list)
-  "count": 15,             // Total record count
-  "module": "books",       // Module name
-  "message": "Success"     // Status message
+  "data": [...],
+  "count": 15,
+  "module": "books",
+  "message": "Success"
 }
 ```
 
-### Error Response
+### Deep Freeze Notice (POST)
+
+```json
+{
+  "message": "Book created (auto-deletes in 2 hours)",
+  "data": { "id": 16, "title": "New Book" },
+  "deep_freeze": {
+    "notice": "This record will be auto-deleted in 2 hours",
+    "expires_at": "2026-02-27T15:30:00Z"
+  }
+}
+```
+
+### Error
 
 ```json
 {
@@ -607,24 +724,11 @@ All endpoints return consistent JSON:
 }
 ```
 
-### Deep Freeze Response (POST)
-
-```json
-{
-  "message": "Book created (auto-deletes in 2 hours)",
-  "data": { "id": 16, "title": "New Book", ... },
-  "deep_freeze": {
-    "notice": "This record will be auto-deleted in 2 hours",
-    "expires_at": "2026-02-27T03:30:00Z"
-  }
-}
-```
-
 ---
 
 ## 🤝 Contributing
 
-Contributions welcome! This is an educational platform — improvements to documentation, new modules, and security enhancements are especially valued.
+Contributions welcome! This is an educational platform — improvements to documentation, new modules, and accessibility enhancements are especially valued.
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/new-module`)
@@ -642,8 +746,10 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 <div align="center">
 
-**Built with ❤️ by [Alaadin](https://github.com/AladdinAlynaey) — Powered by AI via [OpenRouter](https://openrouter.ai)**
+**Built by [Alaadin](https://alaadin-alynaey.site)**
 
-🧊 *Deep Freeze keeps your data safe* • 🔑 *20 requests per key* • 📊 *10 interactive modules*
+🧊 Deep Freeze keeps your data safe &nbsp;·&nbsp; 🔑 Dual API keys &nbsp;·&nbsp; 📦 22 modules &nbsp;·&nbsp; 🤖 AI-powered
+
+**[⭐ Star this repo](https://github.com/AladdinAlynaey/http-testing)** if it helped you learn!
 
 </div>

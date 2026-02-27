@@ -370,14 +370,77 @@ a:hover {
   color: white;
 }
 
-.filter-select {
-  padding: 8px 16px;
+/* ---- Custom Filter Dropdown ---- */
+.custom-filter {
+  position: relative;
+  display: inline-block;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--bg-input);
   color: var(--text-primary);
   font-size: 0.9rem;
   font-family: var(--font-primary);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+  color: var(--accent-hover);
+}
+
+.custom-filter.open .filter-btn {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.filter-options {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 200px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  z-index: 1001;
+  backdrop-filter: blur(20px);
+}
+
+.custom-filter.open .filter-options {
+  display: block;
+}
+
+.filter-option {
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.filter-option:hover {
+  background: var(--accent-glow);
+  color: var(--accent-hover);
+}
+
+.filter-option.active {
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-weight: 600;
 }
 
 /* ---- Card Grid ---- */
@@ -399,13 +462,46 @@ a:hover {
   transition: var(--transition);
   cursor: pointer;
   backdrop-filter: blur(10px);
+  position: relative;
 }
 
 .card:hover {
-  border-color: var(--accent);
+  border-color: var(--card-accent, var(--accent));
   background: var(--bg-card-hover);
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-glow);
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--card-accent, var(--accent)) 25%, transparent),
+    0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* AI Card — full 3-column span */
+.card-featured {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  background: linear-gradient(135deg, rgba(239, 68, 68, .08), rgba(139, 92, 246, .05));
+  border-color: rgba(239, 68, 68, .25);
+}
+
+.card-featured .card-image-placeholder {
+  height: 100%;
+  min-height: 220px;
+  border-bottom: none;
+  border-right: 1px solid var(--border);
+}
+
+.card-featured .card-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.card-featured .card-title {
+  font-size: 1.4rem;
+}
+
+.card-featured .card-desc {
+  font-size: 1rem;
+  -webkit-line-clamp: 4;
 }
 
 .card-image {
@@ -492,6 +588,108 @@ a:hover {
 .card-badge.auth-login {
   background: rgba(239, 68, 68, 0.1);
   color: var(--danger);
+}
+
+.card-badge.auth-ai {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+}
+
+.card-badge.auth-mixed {
+  background: rgba(139, 92, 246, 0.1);
+  color: #a78bfa;
+}
+
+/* GitHub Star Link */
+.github-star-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 100px !important;
+  font-size: 0.85rem !important;
+  background: var(--bg-glass) !important;
+  transition: var(--transition) !important;
+}
+
+.github-star-link:hover {
+  border-color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.1) !important;
+  color: #f59e0b !important;
+}
+
+/* ---- Dropdown (theme-matched) ---- */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown>button {
+  background: var(--bg-glass) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 6px 14px !important;
+  color: var(--text-secondary) !important;
+  cursor: pointer;
+  font-family: var(--font-primary) !important;
+  font-size: 0.9rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: var(--transition) !important;
+  text-decoration: none !important;
+}
+
+.dropdown>button:hover {
+  color: var(--accent-hover) !important;
+  border-color: var(--accent) !important;
+  background: var(--accent-glow) !important;
+}
+
+.dropdown .dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 8px;
+  min-width: 260px;
+  max-height: 420px;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  z-index: 1001;
+  backdrop-filter: blur(20px);
+}
+
+.dropdown.open .dropdown-menu {
+  display: block !important;
+}
+
+.dropdown .dropdown-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary) !important;
+  text-decoration: none;
+  font-size: 0.88rem;
+  transition: var(--transition-fast);
+}
+
+.dropdown .dropdown-menu a:hover {
+  background: var(--accent-glow);
+  color: var(--accent-hover) !important;
+}
+
+.dropdown .dropdown-menu a.active {
+  background: var(--accent-glow);
+  color: var(--accent) !important;
+  font-weight: 600;
 }
 
 /* List view card styling */
@@ -897,14 +1095,23 @@ a:hover {
   color: var(--danger);
 }
 
-/* ---- Footer ---- */
+/* ---- Footer (fixed bottom) ---- */
 .footer {
-  position: relative;
-  z-index: 1;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
   border-top: 1px solid var(--border);
-  padding: 32px 24px;
+  padding: 14px 24px;
   text-align: center;
   background: var(--bg-secondary);
+  backdrop-filter: blur(16px);
+}
+
+/* Ensure body content doesn't hide behind footer */
+body {
+  padding-bottom: 60px;
 }
 
 .footer-text {
@@ -914,18 +1121,32 @@ a:hover {
 
 .footer-text a {
   color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.footer-text a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
 }
 
 .footer-links {
   display: flex;
   gap: 16px;
   justify-content: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .footer-links a {
   color: var(--text-secondary);
   font-size: 0.9rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover {
+  color: var(--accent);
 }
 
 /* ---- Scrollbar ---- */

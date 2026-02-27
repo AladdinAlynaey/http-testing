@@ -2,274 +2,302 @@
 <html lang="en" data-theme="dark">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Documentation - HTTP Playground</title>
-    <meta name="description"
-        content="Complete API documentation with 50+ CURL examples. All endpoints are public — no API keys needed!">
-    <link rel="icon" type="image/png" href="/static/images/http.png">
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Documentation - HTTP Playground</title>
+        <meta name="description"
+                content="Complete API documentation with 50+ CURL examples. All endpoints are public — no API keys needed!">
+        <link rel="icon" type="image/png" href="/static/images/http.png">
+        <link rel="stylesheet" href="/static/css/style.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 
 <body>
-    <div class="bg-grid"></div>
+        <div class="bg-grid"></div>
 
-    <header class="header">
-        <div class="header-inner">
-            <a href="/" class="logo">
-                <img src="/static/images/http.png" alt="HTTP" style="width:36px;height:36px;border-radius:8px">
-                HTTP Playground
-            </a>
-            <nav class="nav">
-                <a href="/"><i class="fas fa-home"></i> <span data-i18n="nav.home">Home</span></a>
-                <a href="/docs" style="color:var(--accent)"><i class="fas fa-book"></i> <span
-                        data-i18n="nav.docs">Docs</span></a>
-                <div id="auth-nav">
-                    <a href="/login"><i class="fas fa-sign-in-alt"></i> <span data-i18n="nav.login">Login</span></a>
-                    <a href="/register" class="btn-primary"><i class="fas fa-user-plus"></i> <span
-                            data-i18n="nav.register">Register</span></a>
+        <header class="header">
+                <div class="header-inner">
+                        <a href="/" class="logo">
+                                <img src="/static/images/http.png" alt="HTTP"
+                                        style="width:36px;height:36px;border-radius:8px">
+                                HTTP Playground
+                        </a>
+                        <nav class="nav">
+                                <a href="/"><i class="fas fa-home"></i> <span data-i18n="nav.home">Home</span></a>
+                                <a href="/docs" style="color:var(--accent)"><i class="fas fa-book"></i> <span
+                                                data-i18n="nav.docs">Docs</span></a>
+                                <div id="auth-nav">
+                                        <a href="/login"><i class="fas fa-sign-in-alt"></i> <span
+                                                        data-i18n="nav.login">Login</span></a>
+                                        <a href="/register" class="btn-primary"><i class="fas fa-user-plus"></i> <span
+                                                        data-i18n="nav.register">Register</span></a>
+                                </div>
+                                <button class="lang-toggle" id="lang-toggle" onclick="toggleLanguage()"
+                                        title="Toggle Language">عربي</button>
+                                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+                        </nav>
                 </div>
-                <button class="lang-toggle" id="lang-toggle" onclick="toggleLanguage()"
-                    title="Toggle Language">عربي</button>
-                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
-            </nav>
-        </div>
-    </header>
+        </header>
 
-    <main class="main">
-        <div style="text-align:center;margin-bottom:40px">
-            <h1
-                style="font-size:2.5rem;font-weight:800;background:var(--gradient-1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">
-                📖 API Documentation</h1>
-            <p style="color:var(--text-secondary);max-width:600px;margin:12px auto;font-size:1.1rem">
-                All endpoints are <strong style="color:var(--success)">100% public</strong> — no API keys, no login
-                needed.<br>
-                Just copy any CURL command and paste it in your terminal!
-            </p>
-        </div>
+        <main class="main">
+                <div style="text-align:center;margin-bottom:40px">
+                        <h1
+                                style="font-size:2.5rem;font-weight:800;background:var(--gradient-1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">
+                                📖 API Documentation</h1>
+                        <p style="color:var(--text-secondary);max-width:600px;margin:12px auto;font-size:1.1rem">
+                                All endpoints are <strong style="color:var(--success)">100% public</strong> — no API
+                                keys, no login
+                                needed.<br>
+                                Just copy any CURL command and paste it in your terminal!
+                        </p>
+                </div>
 
-        <div class="docs-layout">
-            <!-- Sidebar -->
-            <aside class="docs-sidebar">
-                <div class="section-title">MODULES</div>
-                <a href="#books">📚 Library (Books)</a>
-                <a href="#menu">🍽️ Restaurant Menu</a>
-                <a href="#tasks">✅ Task Manager</a>
-                <a href="#students">🎓 Student Management</a>
-                <a href="#notes">📝 Notes</a>
-                <a href="#files">📁 File Manager</a>
-                <a href="#blog">✍️ Blog Platform</a>
-                <a href="#inventory">📦 Inventory</a>
-                <a href="#weather">🌤️ Weather API</a>
-                <a href="#ai">🤖 AI Assistant</a>
-                <div class="section-title">TOOLS</div>
-                <a href="#echo">🔄 Echo & Debug</a>
-                <a href="#status-codes">📊 Status Codes</a>
-                <a href="#n8n">⚡ n8n Integration</a>
-            </aside>
+                <div class="docs-layout">
+                        <!-- Sidebar -->
+                        <aside class="docs-sidebar">
+                                <div class="section-title">CRUD MODULES</div>
+                                <a href="#books">📚 Library</a>
+                                <a href="#menu">🍽️ Menu</a>
+                                <a href="#tasks">✅ Tasks</a>
+                                <a href="#students">🎓 Students</a>
+                                <a href="#notes">📝 Notes</a>
+                                <a href="#files">📁 Files</a>
+                                <a href="#blog">✍️ Blog</a>
+                                <a href="#inventory">📦 Inventory</a>
+                                <a href="#products">🛍️ Products</a>
+                                <a href="#movies">🎬 Movies</a>
+                                <a href="#recipes">🧑‍🍳 Recipes</a>
+                                <a href="#events">📅 Events</a>
+                                <a href="#contacts">📇 Contacts</a>
+                                <a href="#songs">🎵 Songs</a>
+                                <a href="#quotes">💬 Quotes</a>
+                                <a href="#countries">🌍 Countries</a>
+                                <a href="#jokes">😂 Jokes</a>
+                                <a href="#vehicles">🚗 Vehicles</a>
+                                <a href="#courses">🎓 Courses</a>
+                                <a href="#pets">🐾 Pets</a>
+                                <div class="section-title">SPECIAL</div>
+                                <a href="#weather">🌤️ Weather</a>
+                                <a href="#ai">🤖 AI</a>
+                                <div class="section-title">TOOLS</div>
+                                <a href="#echo">🔄 Echo</a>
+                                <a href="#status-codes">📊 Status Codes</a>
+                                <a href="#n8n">⚡ n8n</a>
+                        </aside>
 
-            <!-- Content -->
-            <div class="docs-content">
+                        <!-- Content -->
+                        <div class="docs-content">
 
-                <!-- BOOKS -->
-                <section class="docs-section" id="books">
-                    <h2>📚 Library System — <code>/api/books</code></h2>
-                    <p>Manage a collection of books. Full CRUD operations with search and genre filtering.</p>
+                                <!-- BOOKS -->
+                                <section class="docs-section" id="books">
+                                        <h2>📚 Library System — <code>/api/books</code></h2>
+                                        <p>Manage a collection of books. Full CRUD operations with search and genre
+                                                filtering.</p>
 
-                    <h3><span class="method-badge get">GET</span> Get all books</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/books</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Get all books</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/books</code>
+                                        </div>
 
-                    <h3><span class="method-badge get">GET</span> Get a single book</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/books/1</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Get a single book</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/books/1</code>
+                                        </div>
 
-                    <h3><span class="method-badge get">GET</span> Search books by title</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/books?search=gatsby"</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Search books by title</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/books?search=gatsby"</code>
+                                        </div>
 
-                    <h3><span class="method-badge get">GET</span> Filter by genre</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/books?genre=Fiction"</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Filter by genre</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/books?genre=Fiction"</code>
+                                        </div>
 
-                    <h3><span class="method-badge post">POST</span> Create a new book</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/books \
+                                        <h3><span class="method-badge post">POST</span> Create a new book</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/books \
   -H "Content-Type: application/json" \
   -d '{"title":"Learn APIs","author":"Alaadin","genre":"Technology","year":2026}'</code></div>
 
-                    <h3><span class="method-badge put">PUT</span> Update a book</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/books/1 \
+                                        <h3><span class="method-badge put">PUT</span> Update a book</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/books/1 \
   -H "Content-Type: application/json" \
   -d '{"title":"Updated Book Title","year":2026}'</code></div>
 
-                    <h3><span class="method-badge delete">DELETE</span> Delete a book</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/books/5</code>
-                    </div>
-                </section>
+                                        <h3><span class="method-badge delete">DELETE</span> Delete a book</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/books/5</code>
+                                        </div>
+                                </section>
 
-                <!-- MENU -->
-                <section class="docs-section" id="menu">
-                    <h2>🍽️ Restaurant Menu — <code>/api/menu</code></h2>
-                    <p>Manage restaurant menu items with categories, prices, and availability.</p>
+                                <!-- MENU -->
+                                <section class="docs-section" id="menu">
+                                        <h2>🍽️ Restaurant Menu — <code>/api/menu</code></h2>
+                                        <p>Manage restaurant menu items with categories, prices, and availability.</p>
 
-                    <h3><span class="method-badge get">GET</span> Get full menu</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/menu</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Get full menu</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/menu</code>
+                                        </div>
 
-                    <h3><span class="method-badge get">GET</span> Get a menu item</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/menu/1</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Get a menu item</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/menu/1</code>
+                                        </div>
 
-                    <h3><span class="method-badge get">GET</span> Filter by category</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/menu?category=Dessert"</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Filter by category</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/menu?category=Dessert"</code>
+                                        </div>
 
-                    <h3><span class="method-badge post">POST</span> Add a new menu item</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/menu \
+                                        <h3><span class="method-badge post">POST</span> Add a new menu item</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/menu \
   -H "Content-Type: application/json" \
   -d '{"name":"Shawarma Plate","price":8.99,"category":"Main","description":"Delicious chicken shawarma"}'</code></div>
 
-                    <h3><span class="method-badge put">PUT</span> Update a menu item</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/menu/1 \
+                                        <h3><span class="method-badge put">PUT</span> Update a menu item</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/menu/1 \
   -H "Content-Type: application/json" \
   -d '{"price":14.99,"is_available":true}'</code></div>
 
-                    <h3><span class="method-badge delete">DELETE</span> Remove a menu item</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/menu/3</code>
-                    </div>
-                </section>
+                                        <h3><span class="method-badge delete">DELETE</span> Remove a menu item</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/menu/3</code>
+                                        </div>
+                                </section>
 
-                <!-- TASKS -->
-                <section class="docs-section" id="tasks">
-                    <h2>✅ Task Manager — <code>/api/tasks</code></h2>
-                    <p>Track tasks with status, priority, and assignment.</p>
+                                <!-- TASKS -->
+                                <section class="docs-section" id="tasks">
+                                        <h2>✅ Task Manager — <code>/api/tasks</code></h2>
+                                        <p>Track tasks with status, priority, and assignment.</p>
 
-                    <h3><span class="method-badge get">GET</span> Get all tasks</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/tasks</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Get all tasks</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/tasks</code>
+                                        </div>
 
-                    <h3><span class="method-badge get">GET</span> Get a single task</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/tasks/1</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Get a single task</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/tasks/1</code>
+                                        </div>
 
-                    <h3><span class="method-badge get">GET</span> Filter by status</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/tasks?status=pending"</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Filter by status</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/tasks?status=pending"</code>
+                                        </div>
 
-                    <h3><span class="method-badge get">GET</span> Filter by priority</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/tasks?priority=high"</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Filter by priority</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/tasks?priority=high"</code>
+                                        </div>
 
-                    <h3><span class="method-badge post">POST</span> Create a task</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/tasks \
+                                        <h3><span class="method-badge post">POST</span> Create a task</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/tasks \
   -H "Content-Type: application/json" \
   -d '{"title":"Learn HTTP Methods","description":"Study GET, POST, PUT, DELETE","priority":"high"}'</code></div>
 
-                    <h3><span class="method-badge put">PUT</span> Update task status</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/tasks/1 \
+                                        <h3><span class="method-badge put">PUT</span> Update task status</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/tasks/1 \
   -H "Content-Type: application/json" \
   -d '{"status":"completed","priority":"low"}'</code></div>
 
-                    <h3><span class="method-badge delete">DELETE</span> Delete a task</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/tasks/2</code>
-                    </div>
-                </section>
+                                        <h3><span class="method-badge delete">DELETE</span> Delete a task</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/tasks/2</code>
+                                        </div>
+                                </section>
 
-                <!-- STUDENTS -->
-                <section class="docs-section" id="students">
-                    <h2>🎓 Student Management — <code>/api/students</code></h2>
-                    <p>Manage student records with GPA tracking and major filtering.</p>
+                                <!-- STUDENTS -->
+                                <section class="docs-section" id="students">
+                                        <h2>🎓 Student Management — <code>/api/students</code></h2>
+                                        <p>Manage student records with GPA tracking and major filtering.</p>
 
-                    <h3><span class="method-badge get">GET</span> Get all students</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/students</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Get all students</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/students</code>
+                                        </div>
 
-                    <h3><span class="method-badge get">GET</span> Get a student</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/students/1</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Get a student</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/students/1</code>
+                                        </div>
 
-                    <h3><span class="method-badge get">GET</span> Filter by major</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/students?major=CS"</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Filter by major</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/students?major=CS"</code>
+                                        </div>
 
-                    <h3><span class="method-badge post">POST</span> Add a student</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/students \
+                                        <h3><span class="method-badge post">POST</span> Add a student</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/students \
   -H "Content-Type: application/json" \
   -d '{"name":"Ahmed Ali","email":"ahmed@example.com","major":"CS","gpa":3.8}'</code></div>
 
-                    <h3><span class="method-badge put">PUT</span> Update student</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/students/1 \
+                                        <h3><span class="method-badge put">PUT</span> Update student</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/students/1 \
   -H "Content-Type: application/json" \
   -d '{"gpa":3.95,"major":"AI"}'</code></div>
 
-                    <h3><span class="method-badge delete">DELETE</span> Delete student</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/students/2</code>
-                    </div>
-                </section>
+                                        <h3><span class="method-badge delete">DELETE</span> Delete student</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/students/2</code>
+                                        </div>
+                                </section>
 
-                <!-- NOTES -->
-                <section class="docs-section" id="notes">
-                    <h2>📝 Notes System — <code>/api/notes</code></h2>
-                    <p>Create and organize notes with categories and pinning.</p>
+                                <!-- NOTES -->
+                                <section class="docs-section" id="notes">
+                                        <h2>📝 Notes System — <code>/api/notes</code></h2>
+                                        <p>Create and organize notes with categories and pinning.</p>
 
-                    <h3><span class="method-badge get">GET</span> Get all notes</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/notes</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Get all notes</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/notes</code>
+                                        </div>
 
-                    <h3><span class="method-badge get">GET</span> Get a note</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/notes/1</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Get a note</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/notes/1</code>
+                                        </div>
 
-                    <h3><span class="method-badge post">POST</span> Create a note</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/notes \
+                                        <h3><span class="method-badge post">POST</span> Create a note</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/notes \
   -H "Content-Type: application/json" \
-  -d '{"title":"My Study Notes","content":"HTTP is the protocol of the web","category":"Study","is_pinned":true}'</code></div>
+  -d '{"title":"My Study Notes","content":"HTTP is the protocol of the web","category":"Study","is_pinned":true}'</code>
+                                        </div>
 
-                    <h3><span class="method-badge put">PUT</span> Update a note</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/notes/1 \
+                                        <h3><span class="method-badge put">PUT</span> Update a note</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/notes/1 \
   -H "Content-Type: application/json" \
   -d '{"content":"Updated content here","is_pinned":false}'</code></div>
 
-                    <h3><span class="method-badge delete">DELETE</span> Delete a note</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/notes/1</code>
-                    </div>
-                </section>
+                                        <h3><span class="method-badge delete">DELETE</span> Delete a note</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/notes/1</code>
+                                        </div>
+                                </section>
 
-                <!-- FILES -->
-                <section class="docs-section" id="files">
-                    <h2>📁 File Manager — <code>/api/files</code></h2>
-                    <p>Upload and download files. Learn multipart form data handling.</p>
+                                <!-- FILES -->
+                                <section class="docs-section" id="files">
+                                        <h2>📁 File Manager — <code>/api/files</code></h2>
+                                        <p>Upload and download files. Learn multipart form data handling.</p>
 
-                    <h3><span class="method-badge get">GET</span> List all files</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/files</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> List all files</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/files</code>
+                                        </div>
 
-                    <h3><span class="method-badge post">POST</span> Upload a file</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Upload a text file
+                                        <h3><span class="method-badge post">POST</span> Upload a file</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code># Upload a text file
 curl -X POST https://n8nhttp.alaadin-alynaey.site/api/files/upload \
   -F "file=@myfile.txt"
 
@@ -277,97 +305,294 @@ curl -X POST https://n8nhttp.alaadin-alynaey.site/api/files/upload \
 curl -X POST https://n8nhttp.alaadin-alynaey.site/api/files/upload \
   -F "file=@photo.jpg"</code></div>
 
-                    <h3><span class="method-badge get">GET</span> Download a file</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/files/download/1 -o downloaded_file.txt</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Download a file</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/files/download/1 -o downloaded_file.txt</code>
+                                        </div>
 
-                    <h3><span class="method-badge delete">DELETE</span> Delete a file</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/files/1</code>
-                    </div>
-                </section>
+                                        <h3><span class="method-badge delete">DELETE</span> Delete a file</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/files/1</code>
+                                        </div>
+                                </section>
 
-                <!-- BLOG -->
-                <section class="docs-section" id="blog">
-                    <h2>✍️ Blog Platform — <code>/api/blog</code></h2>
-                    <p>Full blog system with posts, tags, and publishing.</p>
+                                <!-- BLOG -->
+                                <section class="docs-section" id="blog">
+                                        <h2>✍️ Blog Platform — <code>/api/blog</code></h2>
+                                        <p>Full blog system with posts, tags, and publishing.</p>
 
-                    <h3><span class="method-badge get">GET</span> Get all posts</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/blog</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Get all posts</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/blog</code>
+                                        </div>
 
-                    <h3><span class="method-badge get">GET</span> Get a post</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/blog/1</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Get a post</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/blog/1</code>
+                                        </div>
 
-                    <h3><span class="method-badge post">POST</span> Create a blog post</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/blog \
+                                        <h3><span class="method-badge post">POST</span> Create a blog post</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/blog \
   -H "Content-Type: application/json" \
   -d '{"title":"My First Post","content":"This is my blog content about APIs","tags":"api,http,learning"}'</code></div>
 
-                    <h3><span class="method-badge put">PUT</span> Update a post</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/blog/1 \
+                                        <h3><span class="method-badge put">PUT</span> Update a post</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/blog/1 \
   -H "Content-Type: application/json" \
   -d '{"title":"Updated Post Title","content":"Updated content"}'</code></div>
 
-                    <h3><span class="method-badge delete">DELETE</span> Delete a post</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/blog/1</code>
-                    </div>
-                </section>
+                                        <h3><span class="method-badge delete">DELETE</span> Delete a post</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/blog/1</code>
+                                        </div>
+                                </section>
 
-                <!-- INVENTORY -->
-                <section class="docs-section" id="inventory">
-                    <h2>📦 Inventory System — <code>/api/inventory</code></h2>
-                    <p>Track inventory across warehouses with stock monitoring.</p>
+                                <!-- INVENTORY -->
+                                <section class="docs-section" id="inventory">
+                                        <h2>📦 Inventory System — <code>/api/inventory</code></h2>
+                                        <p>Track inventory across warehouses with stock monitoring.</p>
 
-                    <h3><span class="method-badge get">GET</span> Get all items</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/inventory</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Get all items</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/inventory</code>
+                                        </div>
 
-                    <h3><span class="method-badge get">GET</span> Get an item</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/inventory/1</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Get an item</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/inventory/1</code>
+                                        </div>
 
-                    <h3><span class="method-badge get">GET</span> Filter low stock</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/inventory?low_stock=true"</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Filter low stock</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/inventory?low_stock=true"</code>
+                                        </div>
 
-                    <h3><span class="method-badge post">POST</span> Add inventory item</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/inventory \
+                                        <h3><span class="method-badge post">POST</span> Add inventory item</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/inventory \
   -H "Content-Type: application/json" \
-  -d '{"name":"Laptop","sku":"TECH-001","quantity":50,"price":999.99,"category":"Electronics","warehouse":"Main"}'</code></div>
+  -d '{"name":"Laptop","sku":"TECH-001","quantity":50,"price":999.99,"category":"Electronics","warehouse":"Main"}'</code>
+                                        </div>
 
-                    <h3><span class="method-badge put">PUT</span> Update inventory</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/inventory/1 \
+                                        <h3><span class="method-badge put">PUT</span> Update inventory</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X PUT https://n8nhttp.alaadin-alynaey.site/api/inventory/1 \
   -H "Content-Type: application/json" \
   -d '{"quantity":75,"price":899.99}'</code></div>
 
-                    <h3><span class="method-badge delete">DELETE</span> Delete item</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/inventory/2</code>
-                    </div>
-                </section>
+                                        <h3><span class="method-badge delete">DELETE</span> Delete item</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X DELETE https://n8nhttp.alaadin-alynaey.site/api/inventory/2</code>
+                                        </div>
+                                </section>
 
-                <!-- WEATHER -->
-                <section class="docs-section" id="weather">
-                    <h2>🌤️ Mock Weather API — <code>/api/weather</code></h2>
-                    <p>Practice with weather data for 10 cities. Great for learning query parameters.</p>
+                                <!-- PRODUCTS -->
+                                <section class="docs-section" id="products">
+                                        <h2>🛍️ Product Store — <code>/api/products</code></h2>
+                                        <p>E-commerce products with brands, ratings, stock.</p>
+                                        <h3><span class="method-badge get">GET</span> Get all products</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/products</code>
+                                        </div>
+                                        <h3><span class="method-badge post">POST</span> Create a product</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/products \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Wireless Headphones","brand":"TechCo","price":79.99,"category":"Electronics","rating":4.5}'</code></div>
+                                </section>
 
-                    <h3><span class="method-badge get">GET</span> All available cities</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/weather</code>
-                    </div>
+                                <!-- MOVIES -->
+                                <section class="docs-section" id="movies">
+                                        <h2>🎬 Movie Database — <code>/api/movies</code></h2>
+                                        <p>Movies with directors, genres, ratings. Top-rated + language filters.</p>
+                                        <h3><span class="method-badge get">GET</span> Get all movies</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/movies</code>
+                                        </div>
+                                        <h3><span class="method-badge get">GET</span> Filter by genre</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/movies?genre=Action"</code>
+                                        </div>
+                                        <h3><span class="method-badge post">POST</span> Add a movie</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/movies \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Interstellar","director":"Nolan","genre":"Sci-Fi","year":2014,"rating":8.6}'</code></div>
+                                </section>
 
-                    <h3><span class="method-badge get">GET</span> Weather for a specific city</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Dubai
+                                <!-- RECIPES -->
+                                <section class="docs-section" id="recipes">
+                                        <h2>🧑‍🍳 Recipe Book — <code>/api/recipes</code></h2>
+                                        <p>Cooking recipes with ingredients, cuisine, difficulty, prep &amp; cook times.
+                                        </p>
+                                        <h3><span class="method-badge get">GET</span> Get all recipes</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/recipes</code>
+                                        </div>
+                                        <h3><span class="method-badge post">POST</span> Add a recipe</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/recipes \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Shawarma","cuisine":"Middle Eastern","difficulty":"Medium","prep_time":30,"cook_time":20}'</code></div>
+                                </section>
+
+                                <!-- EVENTS -->
+                                <section class="docs-section" id="events">
+                                        <h2>📅 Event Calendar — <code>/api/events</code></h2>
+                                        <p>Calendar events with dates, locations, capacity.</p>
+                                        <h3><span class="method-badge get">GET</span> Get all events</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/events</code>
+                                        </div>
+                                        <h3><span class="method-badge post">POST</span> Create an event</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/events \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Tech Meetup","date":"2026-04-01","location":"Dubai","capacity":100}'</code></div>
+                                </section>
+
+                                <!-- CONTACTS -->
+                                <section class="docs-section" id="contacts">
+                                        <h2>📇 Address Book — <code>/api/contacts</code></h2>
+                                        <p>Contact management with company, job title, location.</p>
+                                        <h3><span class="method-badge get">GET</span> Get all contacts</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/contacts</code>
+                                        </div>
+                                        <h3><span class="method-badge post">POST</span> Add a contact</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/contacts \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Sara Ahmed","email":"sara@example.com","company":"TechCorp","job_title":"Engineer"}'</code></div>
+                                </section>
+
+                                <!-- SONGS -->
+                                <section class="docs-section" id="songs">
+                                        <h2>🎵 Music Library — <code>/api/songs</code></h2>
+                                        <p>Songs with artists, albums, genres, durations.</p>
+                                        <h3><span class="method-badge get">GET</span> Get all songs</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/songs</code>
+                                        </div>
+                                        <h3><span class="method-badge post">POST</span> Add a song</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/songs \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Blinding Lights","artist":"The Weeknd","album":"After Hours","genre":"Pop","duration":200}'</code>
+                                        </div>
+                                </section>
+
+                                <!-- QUOTES -->
+                                <section class="docs-section" id="quotes">
+                                        <h2>💬 Quotes Collection — <code>/api/quotes</code></h2>
+                                        <p>Inspirational quotes. Random quote endpoint included.</p>
+                                        <h3><span class="method-badge get">GET</span> Get all quotes</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/quotes</code>
+                                        </div>
+                                        <h3><span class="method-badge post">POST</span> Add a quote</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/quotes \
+  -H "Content-Type: application/json" \
+  -d '{"quote":"The only way to do great work is to love what you do.","author":"Steve Jobs","category":"Motivation"}'</code>
+                                        </div>
+                                </section>
+
+                                <!-- COUNTRIES -->
+                                <section class="docs-section" id="countries">
+                                        <h2>🌍 World Countries — <code>/api/countries</code></h2>
+                                        <p>Country data: capitals, populations, currencies, continents.</p>
+                                        <h3><span class="method-badge get">GET</span> Get all countries</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/countries</code>
+                                        </div>
+                                        <h3><span class="method-badge get">GET</span> Filter by continent</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/countries?continent=Asia"</code>
+                                        </div>
+                                </section>
+
+                                <!-- JOKES -->
+                                <section class="docs-section" id="jokes">
+                                        <h2>😂 Joke API — <code>/api/jokes</code></h2>
+                                        <p>Programming jokes with setup/punchline. Random joke endpoint.</p>
+                                        <h3><span class="method-badge get">GET</span> Get all jokes</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/jokes</code>
+                                        </div>
+                                        <h3><span class="method-badge post">POST</span> Add a joke</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/jokes \
+  -H "Content-Type: application/json" \
+  -d '{"setup":"Why do programmers prefer dark mode?","punchline":"Because light attracts bugs!","category":"Programming"}'</code>
+                                        </div>
+                                </section>
+
+                                <!-- VEHICLES -->
+                                <section class="docs-section" id="vehicles">
+                                        <h2>🚗 Vehicle Market — <code>/api/vehicles</code></h2>
+                                        <p>Cars &amp; trucks with make, model, year, fuel type.</p>
+                                        <h3><span class="method-badge get">GET</span> Get all vehicles</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/vehicles</code>
+                                        </div>
+                                        <h3><span class="method-badge post">POST</span> Add a vehicle</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/vehicles \
+  -H "Content-Type: application/json" \
+  -d '{"make":"Tesla","model":"Model 3","year":2026,"color":"White","fuel_type":"Electric","price":42000}'</code></div>
+                                </section>
+
+                                <!-- COURSES -->
+                                <section class="docs-section" id="courses">
+                                        <h2>🎓 Online Courses — <code>/api/courses</code></h2>
+                                        <p>Course catalog with instructors, ratings, enrollment.</p>
+                                        <h3><span class="method-badge get">GET</span> Get all courses</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/courses</code>
+                                        </div>
+                                        <h3><span class="method-badge post">POST</span> Add a course</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/courses \
+  -H "Content-Type: application/json" \
+  -d '{"title":"REST API Mastery","instructor":"Alaadin","category":"Web Dev","price":0,"rating":4.9}'</code></div>
+                                </section>
+
+                                <!-- PETS -->
+                                <section class="docs-section" id="pets">
+                                        <h2>🐾 Pet Adoption — <code>/api/pets</code></h2>
+                                        <p>Pet adoption: dogs, cats with breeds, ages, shelters.</p>
+                                        <h3><span class="method-badge get">GET</span> Get all pets</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/pets</code>
+                                        </div>
+                                        <h3><span class="method-badge get">GET</span> Available for adoption</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/pets?available=true"</code>
+                                        </div>
+                                        <h3><span class="method-badge post">POST</span> Add a pet</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/pets \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Luna","species":"Cat","breed":"Persian","age":2,"shelter":"Happy Paws","available":true}'</code></div>
+                                </section>
+
+                                <!-- WEATHER -->
+                                <section class="docs-section" id="weather">
+                                        <h2>🌤️ Mock Weather API — <code>/api/weather</code></h2>
+                                        <p>Practice with weather data for 10 cities. Great for learning query
+                                                parameters.</p>
+
+                                        <h3><span class="method-badge get">GET</span> All available cities</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/weather</code>
+                                        </div>
+
+                                        <h3><span class="method-badge get">GET</span> Weather for a specific city</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code># Dubai
 curl "https://n8nhttp.alaadin-alynaey.site/api/weather?city=dubai"
 
 # Tokyo
@@ -379,90 +604,98 @@ curl "https://n8nhttp.alaadin-alynaey.site/api/weather?city=london"
 # New York
 curl "https://n8nhttp.alaadin-alynaey.site/api/weather?city=new york"</code></div>
 
-                    <h3><span class="method-badge get">GET</span> Compare two cities</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/weather/compare?city1=dubai&city2=london"</code>
-                    </div>
-                </section>
+                                        <h3><span class="method-badge get">GET</span> Compare two cities</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl "https://n8nhttp.alaadin-alynaey.site/api/weather/compare?city1=dubai&city2=london"</code>
+                                        </div>
+                                </section>
 
-                <!-- AI -->
-                <section class="docs-section" id="ai">
-                    <h2>🤖 AI Assistant — <code>/api/ai/*</code></h2>
-                    <p>Powered by OpenRouter. Generate text, summarize, classify, validate, and chat.</p>
+                                <!-- AI -->
+                                <section class="docs-section" id="ai">
+                                        <h2>🤖 AI Assistant — <code>/api/ai/*</code></h2>
+                                        <p>Powered by OpenRouter. Generate text, summarize, classify, validate, and
+                                                chat.</p>
 
-                    <h3><span class="method-badge post">POST</span> Generate text</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/generate \
+                                        <h3><span class="method-badge post">POST</span> Generate text</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/generate \
   -H "Content-Type: application/json" \
   -d '{"prompt":"Explain what a REST API is in simple terms","max_tokens":200}'</code></div>
 
-                    <h3><span class="method-badge post">POST</span> Summarize text</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/summarize \
+                                        <h3><span class="method-badge post">POST</span> Summarize text</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/summarize \
   -H "Content-Type: application/json" \
   -d '{"text":"REST APIs work by sending HTTP requests to a server. The server processes the request and returns a response. Common methods include GET for reading data, POST for creating data, PUT for updating data, and DELETE for removing data. Each request includes headers and optionally a body."}'</code>
-                    </div>
+                                        </div>
 
-                    <h3><span class="method-badge post">POST</span> Classify text</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/classify \
+                                        <h3><span class="method-badge post">POST</span> Classify text</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/classify \
   -H "Content-Type: application/json" \
-  -d '{"text":"The new Python 3.12 release includes performance improvements","categories":["Technology","Science","Business","Sports"]}'</code></div>
+  -d '{"text":"The new Python 3.12 release includes performance improvements","categories":["Technology","Science","Business","Sports"]}'</code>
+                                        </div>
 
-                    <h3><span class="method-badge post">POST</span> Validate content</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># Grammar check
+                                        <h3><span class="method-badge post">POST</span> Validate content</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code># Grammar check
 curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/validate \
   -H "Content-Type: application/json" \
   -d '{"text":"I has went to the store yesterday","type":"grammar"}'</code></div>
 
-                    <h3><span class="method-badge post">POST</span> Chat with AI</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/chat \
+                                        <h3><span class="method-badge post">POST</span> Chat with AI</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/ai/chat \
   -H "Content-Type: application/json" \
   -d '{"message":"What is the difference between GET and POST?","context":"api"}'</code></div>
-                </section>
+                                </section>
 
-                <!-- ECHO & DEBUG -->
-                <section class="docs-section" id="echo">
-                    <h2>🔄 Echo & Debug Tools</h2>
-                    <p>Learn how HTTP works by seeing your request details.</p>
+                                <!-- ECHO & DEBUG -->
+                                <section class="docs-section" id="echo">
+                                        <h2>🔄 Echo & Debug Tools</h2>
+                                        <p>Learn how HTTP works by seeing your request details.</p>
 
-                    <h3><span class="method-badge get">GET</span> Echo your request</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/echo</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Echo your request</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/echo</code>
+                                        </div>
 
-                    <h3><span class="method-badge post">POST</span> Echo with body</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/echo \
+                                        <h3><span class="method-badge post">POST</span> Echo with body</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl -X POST https://n8nhttp.alaadin-alynaey.site/api/echo \
   -H "Content-Type: application/json" \
   -d '{"message":"Hello from CURL!"}'</code></div>
 
-                    <h3><span class="method-badge get">GET</span> See your headers</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/headers</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> See your headers</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/headers</code>
+                                        </div>
 
-                    <h3><span class="method-badge get">GET</span> Send custom headers</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/headers \
+                                        <h3><span class="method-badge get">GET</span> Send custom headers</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/headers \
   -H "X-My-Name: Alaadin" \
   -H "X-My-Class: HTTP101"</code></div>
 
-                    <h3><span class="method-badge get">GET</span> Health check</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/health</code>
-                    </div>
+                                        <h3><span class="method-badge get">GET</span> Health check</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/health</code>
+                                        </div>
 
-                    <h3><span class="method-badge get">GET</span> API info</h3>
-                    <div class="code-block"><button class="copy-btn"
-                            onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/info</code>
-                    </div>
-                </section>
+                                        <h3><span class="method-badge get">GET</span> API info</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code>curl https://n8nhttp.alaadin-alynaey.site/api/info</code>
+                                        </div>
+                                </section>
 
-                <!-- STATUS CODES -->
-                <section class="docs-section" id="status-codes">
-                    <h2>📊 HTTP Status Codes</h2>
-                    <p>Learn what different status codes mean by requesting them.</p>
+                                <!-- STATUS CODES -->
+                                <section class="docs-section" id="status-codes">
+                                        <h2>📊 HTTP Status Codes</h2>
+                                        <p>Learn what different status codes mean by requesting them.</p>
 
-                    <h3><span class="method-badge get">GET</span> Try different status codes</h3>
-                    <div class="code-block"><button class="copy-btn" onclick="copyCode(this)">Copy</button><code># 200 OK
+                                        <h3><span class="method-badge get">GET</span> Try different status codes</h3>
+                                        <div class="code-block"><button class="copy-btn"
+                                                        onclick="copyCode(this)">Copy</button><code># 200 OK
 curl https://n8nhttp.alaadin-alynaey.site/api/status-codes/200
 
 # 201 Created
@@ -479,63 +712,66 @@ curl https://n8nhttp.alaadin-alynaey.site/api/status-codes/404
 
 # 500 Internal Server Error
 curl https://n8nhttp.alaadin-alynaey.site/api/status-codes/500</code></div>
-                </section>
+                                </section>
 
-                <!-- N8N -->
-                <section class="docs-section" id="n8n">
-                    <h2>⚡ n8n Integration</h2>
-                    <p>Use this API with n8n automation workflows.</p>
+                                <!-- N8N -->
+                                <section class="docs-section" id="n8n">
+                                        <h2>⚡ n8n Integration</h2>
+                                        <p>Use this API with n8n automation workflows.</p>
 
-                    <h3>Setup Steps:</h3>
-                    <ol>
-                        <li><strong>HTTP Request Node:</strong>
-                            <ul>
-                                <li>Method: GET</li>
-                                <li>URL: <code>https://n8nhttp.alaadin-alynaey.site/api/books</code></li>
-                            </ul>
-                        </li>
-                        <li><strong>Create Task from Telegram:</strong>
-                            <ul>
-                                <li>Method: POST</li>
-                                <li>URL: <code>https://n8nhttp.alaadin-alynaey.site/api/tasks</code></li>
-                                <li>Headers: <code>Content-Type: application/json</code></li>
-                                <li>Body:
-                                    <code>{"title": "&#123;&#123;$json.message.text&#125;&#125;", "priority": "medium"}</code>
-                                </li>
-                            </ul>
-                        </li>
-                        <li><strong>Monitor Inventory:</strong>
-                            <ul>
-                                <li>Method: GET</li>
-                                <li>URL: <code>https://n8nhttp.alaadin-alynaey.site/api/inventory?low_stock=true</code>
-                                </li>
-                                <li>Trigger: Schedule node (every hour)</li>
-                            </ul>
-                        </li>
-                    </ol>
-                </section>
+                                        <h3>Setup Steps:</h3>
+                                        <ol>
+                                                <li><strong>HTTP Request Node:</strong>
+                                                        <ul>
+                                                                <li>Method: GET</li>
+                                                                <li>URL: <code>https://n8nhttp.alaadin-alynaey.site/api/books</code>
+                                                                </li>
+                                                        </ul>
+                                                </li>
+                                                <li><strong>Create Task from Telegram:</strong>
+                                                        <ul>
+                                                                <li>Method: POST</li>
+                                                                <li>URL: <code>https://n8nhttp.alaadin-alynaey.site/api/tasks</code>
+                                                                </li>
+                                                                <li>Headers: <code>Content-Type: application/json</code>
+                                                                </li>
+                                                                <li>Body:
+                                                                        <code>{"title": "&#123;&#123;$json.message.text&#125;&#125;", "priority": "medium"}</code>
+                                                                </li>
+                                                        </ul>
+                                                </li>
+                                                <li><strong>Monitor Inventory:</strong>
+                                                        <ul>
+                                                                <li>Method: GET</li>
+                                                                <li>URL: <code>https://n8nhttp.alaadin-alynaey.site/api/inventory?low_stock=true</code>
+                                                                </li>
+                                                                <li>Trigger: Schedule node (every hour)</li>
+                                                        </ul>
+                                                </li>
+                                        </ol>
+                                </section>
 
-            </div>
-        </div>
-    </main>
+                        </div>
+                </div>
+        </main>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-links">
-            <a href="/docs" data-i18n="footer.docs">Documentation</a>
-            <a href="/docs#echo" data-i18n="footer.examples">CURL Examples</a>
-            <a href="/" data-i18n="nav.home">Home</a>
-        </div>
-        <p class="footer-text">
-            <span data-i18n="footer.built">Built by</span> <strong>Alaadin</strong> &nbsp;•&nbsp;
-            <span data-i18n="footer.powered">Powered by AI via</span> <a href="https://openrouter.ai"
-                target="_blank">OpenRouter</a> &nbsp;•&nbsp;
-            &copy; 2026 HTTP Playground
-        </p>
-    </footer>
+        <!-- Footer -->
+        <footer class="footer">
+                <div class="footer-links">
+                        <a href="/docs">Documentation</a>
+                        <a href="/docs#echo">CURL Examples</a>
+                        <a href="/">Home</a>
+                </div>
+                <p class="footer-text">
+                        Built by <a href="https://alaadin-alynaey.site" target="_blank"><strong>Alaadin</strong></a>
+                        &nbsp;•&nbsp;
+                        v3.0 — 20 Modules • Deep Freeze 🧊 &nbsp;•&nbsp;
+                        &copy; 2026 HTTP Playground
+                </p>
+        </footer>
 
-    <script src="/static/js/i18n.js"></script>
-    <script src="/static/js/app.js"></script>
+        <script src="/static/js/i18n.js"></script>
+        <script src="/static/js/app.js"></script>
 </body>
 
 </html>
